@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Starlr" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#070912</item>
+        <item name="android:windowBackground">#070912</item>
+    </style>
+</resources>
