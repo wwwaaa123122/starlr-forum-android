@@ -53,6 +53,12 @@ mobile-x/
 3. 模拟器运行 app —— 已配置访问宿主机 `http://10.0.2.2:8787/`（明文白名单仅限本机调试）。
 4. 连接真机/发布：release 基址为 `https://x.182030.xyz/`（见 `app/build.gradle.kts`）。
 
+## 下载安装
+
+- 仓库内置最新签名包：`apk/starlr-x-v0.1.0-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- 安装：传输到手机直接安装（需允许“安装未知来源应用”）
+- 升级：同签名直接覆盖安装即可，无需卸载
+
 ## 签名与发布
 
 - 发布签名密钥：`keystore/starlr-release.jks`，口令在 `keystore.properties`（随本私密仓库托管，见 `keystore/README.md`）
