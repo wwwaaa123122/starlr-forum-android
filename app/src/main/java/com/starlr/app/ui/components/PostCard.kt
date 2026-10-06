@@ -61,16 +61,16 @@ fun PostCard(
         Row {
             Avatar(
                 url = avatarUrl(post.authorAvatar, post.authorUid, baseUrl),
-                name = post.authorName.ifBlank { "星" },
+                name = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星" },
                 size = 40.dp,
                 modifier = Modifier.clickable(enabled = onAuthorClick != null) { onAuthorClick?.invoke() },
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.fillMaxWidth()) {
-                // 头部：用户名 · 时间 + 角色徽章（后端 Post.authorName 即用户名）
+                // 头部：昵称（无则用户名）· @用户名 + 角色徽章
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = post.authorName.ifBlank { "星旅者" },
+                        text = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星旅者" },
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         maxLines = 1,

@@ -254,7 +254,7 @@ fun PostDetailScreen(
                                 url = com.starlr.app.ui.components.avatarUrl(
                                     post.authorAvatar, post.authorUid, com.starlr.app.ui.BuildConfigAware.baseUrl,
                                 ),
-                                name = post.authorName.ifBlank { "星" },
+                                name = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星" },
                                 size = 44.dp,
                                 modifier = Modifier.clickable { onOpenUser(post.authorName) },
                             )
@@ -262,7 +262,7 @@ fun PostDetailScreen(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        post.authorName.ifBlank { "星旅者" },
+                                        (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星旅者" },
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp,
                                         modifier = Modifier.clickable { onOpenUser(post.authorName) },
