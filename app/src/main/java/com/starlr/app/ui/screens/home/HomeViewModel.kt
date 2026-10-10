@@ -67,7 +67,8 @@ class HomeViewModel(private val repo: StarlrRepository) : ViewModel() {
         if (s.loading) return
         val switching = sort != s.sort
         val page = if (refresh || switching) 1 else s.page + 1
-        val base = if (refresh || switching) emptyList() else s.posts
+        // 仅切换 Tab 清空列表；下拉刷新保留旧内容避免闪空（与 Web 端 keepPreviousData 一致）
+        val base = if (switching) emptyList() else s.posts
 
         _state.value = s.copy(
             sort = sort,

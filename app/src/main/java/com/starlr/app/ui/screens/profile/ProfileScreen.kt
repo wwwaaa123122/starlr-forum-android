@@ -185,9 +185,10 @@ fun ProfileScreen(
 ) {
     val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory(container))
     val state by vm.state.collectAsState()
+    val session by container.repository.session.collectAsState()
     var tab by rememberSaveable { mutableIntStateOf(0) }
 
-    val target = username ?: container.repository.session.value.user?.username
+    val target = username ?: session.user?.username
     LaunchedEffect(target) { vm.bind(username) }
 
     // 未登录访问「我」

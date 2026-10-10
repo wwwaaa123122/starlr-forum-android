@@ -222,11 +222,11 @@ fun LoginScreen(
             buildAnnotatedString {
                 append(if (mode == "login") "登录即代表你同意 " else "注册即表示你同意 ")
                 withLink(
-                    LinkAnnotation.Url("https://x.182030.xyz/terms", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
+                    LinkAnnotation.Url("https://forum.182030.xyz/terms", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
                 ) { append("《用户协议》") }
                 append(" 和 ")
                 withLink(
-                    LinkAnnotation.Url("https://x.182030.xyz/privacy", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
+                    LinkAnnotation.Url("https://forum.182030.xyz/privacy", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
                 ) { append("《隐私政策》") }
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -24,41 +24,57 @@ class TokenAuthenticator(
     /** 只用于刷新请求的裸客户端，避免再次进入 Authenticator */
     private val bareClient = OkHttpClient.Builder().build()
 
+    /** 单飞锁：并发 401 时只放行一个线程真正调 /refresh，其余复用新 token */
+    private val refreshLock = Any()
+
     override fun authenticate(route: Route?, response: Response): Request? {
         if (response.request.header("X-Starlr-Retry") != null) return null // 已重试过
-        val refresh = tokenStore.refreshToken ?: run { onSessionExpired(); return null }
+        val failedAccess = response.request.header("Authorization")?.removePrefix("Bearer ")
 
-        val body = json.encodeToString(RefreshRequest.serializer(), RefreshRequest(refresh))
-            .toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url(baseUrlProvider() + "api/auth/refresh")
-            .post(body)
-            .build()
-
-        return try {
-            bareClient.newCall(request).execute().use { res ->
-                if (!res.isSuccessful) {
-                    tokenStore.clear()
-                    onSessionExpired()
-                    return null
-                }
-                val text = res.body?.string().orEmpty()
-                val auth = json.decodeFromString(AuthResponse.serializer(), text)
-                val access = auth.accessToken
-                val newRefresh = auth.refreshToken ?: refresh
-                if (access.isNullOrBlank()) {
-                    tokenStore.clear()
-                    onSessionExpired()
-                    return null
-                }
-                tokenStore.save(access, newRefresh)
-                response.request.newBuilder()
-                    .header("Authorization", "Bearer $access")
+        synchronized(refreshLock) {
+            // 另一线程已完成刷新：直接复用最新 access token，不再打 /refresh
+            val current = tokenStore.accessToken
+            if (!current.isNullOrBlank() && current != failedAccess) {
+                return response.request.newBuilder()
+                    .header("Authorization", "Bearer $current")
                     .header("X-Starlr-Retry", "1")
                     .build()
             }
-        } catch (_: Exception) {
-            null
+
+            val refresh = tokenStore.refreshToken ?: run { onSessionExpired(); return null }
+
+            val body = json.encodeToString(RefreshRequest.serializer(), RefreshRequest(refresh))
+                .toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url(baseUrlProvider() + "api/auth/refresh")
+                .post(body)
+                .build()
+
+            return try {
+                bareClient.newCall(request).execute().use { res ->
+                    if (!res.isSuccessful) {
+                        tokenStore.clear()
+                        onSessionExpired()
+                        return null
+                    }
+                    val text = res.body?.string().orEmpty()
+                    val auth = json.decodeFromString(AuthResponse.serializer(), text)
+                    val access = auth.accessToken
+                    val newRefresh = auth.refreshToken ?: refresh
+                    if (access.isNullOrBlank()) {
+                        tokenStore.clear()
+                        onSessionExpired()
+                        return null
+                    }
+                    tokenStore.save(access, newRefresh)
+                    response.request.newBuilder()
+                        .header("Authorization", "Bearer $access")
+                        .header("X-Starlr-Retry", "1")
+                        .build()
+                }
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 }

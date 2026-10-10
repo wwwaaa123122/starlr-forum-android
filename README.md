@@ -51,11 +51,12 @@ mobile-x/
 1. Android Studio（Ladybug+）打开 `mobile-x/`，等待 Gradle Sync（AGP 8.5 / compileSdk 35）。
 2. 启动本地后端：仓库根目录 `pnpm --filter backend dev`（Worker @ :8787）。
 3. 模拟器运行 app —— 已配置访问宿主机 `http://10.0.2.2:8787/`（明文白名单仅限本机调试）。
-4. 连接真机/发布：release 基址为 `https://x.182030.xyz/`（见 `app/build.gradle.kts`）。
+4. 连接真机/发布：release 基址为 `https://i.182030.xyz/`（纯 API Worker 直连，见 `app/build.gradle.kts`）。
 
 ## 下载安装
 
-- 仓库内置最新签名包：`apk/starlr-x-v0.1.0-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- 仓库内置最新签名包：`apk/starlr-x-v0.1.2-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- v0.1.2：直连纯 API `https://i.182030.xyz/`；亮色主题对齐 Web 色板；修复并发 401 刷新竞态与下拉刷新闪空
 - 安装：传输到手机直接安装（需允许“安装未知来源应用”）
 - 升级：同签名直接覆盖安装即可，无需卸载
 

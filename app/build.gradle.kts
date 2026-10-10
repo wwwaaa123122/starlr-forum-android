@@ -21,8 +21,8 @@ android {
         applicationId = "com.starlr.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.1.2"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -45,7 +45,7 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "API_BASE_URL", "\"https://x.182030.xyz/\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://i.182030.xyz/\"")
             if (keystoreProps.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
             }
