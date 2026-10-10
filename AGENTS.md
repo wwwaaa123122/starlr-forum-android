@@ -15,7 +15,7 @@ cd mobile-x && ./gradlew :app:assembleRelease   # 产物 app/build/outputs/apk/r
 ```
 
 - 签名：`keystore/starlr-release.jks` + `keystore.properties`（**已提交**，仓库私有；密码别写进文档）。
-- 版本：`app/build.gradle.kts` 的 `versionCode`（递增整数）/ `versionName`；当前 v0.1.3 (4)。
+- 版本：`app/build.gradle.kts` 的 `versionCode`（递增整数）/ `versionName`；当前 v0.1.4 (5)。
 
 ## API 约定
 

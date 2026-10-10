@@ -1,7 +1,7 @@
 package com.starlr.app.data
 
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.ListSerializer
+
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -14,23 +14,20 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-/** 标签反序列化：接受 "a" 或 {"name":"a"} 两种元素形态 */
+/** 标签反序列化：元素形态接受 "a"、"{"name":"a"}"、空值，任何形态都不抛异常 */
 object TagValueSerializer : KSerializer<TagValue> {
-    private val delegate = ListSerializer(JsonElement.serializer())
-    override val descriptor: SerialDescriptor = delegate.descriptor
+    override val descriptor: SerialDescriptor = String.serializer().descriptor
 
     override fun deserialize(decoder: Decoder): TagValue {
-        val array = (decoder as? JsonDecoder)?.decodeJsonElement()?.jsonArray ?: return TagValue("")
-        val first = array.firstOrNull() ?: return TagValue("")
-        return TagValue(first.extractName())
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return TagValue("")
+        return TagValue(element.extractName())
     }
 
     override fun serialize(encoder: Encoder, value: TagValue) {
-        encoder.encodeSerializableValue(ListSerializer(String.serializer()), listOf(value.name))
+        encoder.encodeSerializableValue(String.serializer(), value.name)
     }
 
     private fun JsonElement.extractName(): String = when (this) {
