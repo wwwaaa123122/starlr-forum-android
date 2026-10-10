@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 与站点 logo 背景一致（frontend-x/public/icon-512.png 采样 #090B1F~#0A0D20） -->
+    <color name="ic_launcher_bg">#090C1F</color>
+</resources>
