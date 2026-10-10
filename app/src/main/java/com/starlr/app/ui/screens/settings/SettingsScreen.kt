@@ -79,7 +79,7 @@ class SettingsViewModel(private val repo: StarlrRepository) : ViewModel() {
         viewModelScope.launch {
             runCatching { repo.api.updateMe(UpdateMeRequest(nickname = nickname.trim(), bio = bio.trim())) }
                 .onSuccess { res ->
-                    _state.value = _state.value.copy(saving = false, me = res.user, message = "资料已更新 ✦")
+                    _state.value = _state.value.copy(saving = false, me = res.user, message = "资料已更新")
                     repo.loadCurrentUser()
                 }
                 .onFailure { e ->
@@ -115,6 +115,16 @@ class SettingsViewModel(private val repo: StarlrRepository) : ViewModel() {
         }
     }
 
+    fun saveServer(serverConfig: com.starlr.app.data.ServerConfig, url: String) {
+        val err = serverConfig.set(url)
+        if (err != null) {
+            _state.value = _state.value.copy(error = err, message = null)
+            return
+        }
+        repo.resetSession()
+        _state.value = _state.value.copy(message = "服务器地址已保存，已退出当前登录", error = null)
+    }
+
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = SettingsViewModel(container.repository) as T
@@ -138,6 +148,7 @@ fun SettingsScreen(
     var bio by rememberSaveable { mutableStateOf("") }
     var currentPassword by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
+    var serverUrl by rememberSaveable { mutableStateOf(container.serverConfig.current) }
 
     // 首次载入时预填
     LaunchedEffect(state.me) {
@@ -170,7 +181,7 @@ fun SettingsScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Avatar(
                     url = state.me?.avatarUrl ?: session.user?.avatarUrl,
-                    name = session.user?.username ?: "星",
+                    name = session.user?.username ?: "用户",
                     size = 56.dp,
                 )
                 Spacer(Modifier.width(14.dp))
@@ -256,6 +267,29 @@ fun SettingsScreen(
                 shape = RoundedCornerShape(999.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
             ) { Text("更新密码") }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            // 服务器
+            Text("服务器", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            OutlinedTextField(
+                value = serverUrl,
+                onValueChange = { serverUrl = it },
+                label = { Text("API 地址") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                ),
+            )
+            Button(
+                onClick = { vm.saveServer(container.serverConfig, serverUrl) },
+                enabled = !state.saving,
+                modifier = Modifier.fillMaxWidth().height(46.dp),
+                shape = RoundedCornerShape(999.dp),
+            ) { Text("保存地址") }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 

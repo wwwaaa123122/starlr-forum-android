@@ -15,14 +15,15 @@ cd mobile-x && ./gradlew :app:assembleRelease   # 产物 app/build/outputs/apk/r
 ```
 
 - 签名：`keystore/starlr-release.jks` + `keystore.properties`（**已提交**，仓库私有；密码别写进文档）。
-- 版本：`app/build.gradle.kts` 的 `versionCode`（递增整数）/ `versionName`；当前 v0.1.2 (3)。
+- 版本：`app/build.gradle.kts` 的 `versionCode`（递增整数）/ `versionName`；当前 v0.1.3 (4)。
 
 ## API 约定
 
-- Base URL：`BuildConfig.API_BASE_URL` — release `https://i.182030.xyz/`（纯 API Worker，头像等相对路径自动同域），debug `http://10.0.2.2:8787/`（模拟器回环）。
+- Base URL：`BuildConfig.API_BASE_URL` — release `https://i.182030.xyz/`（纯 API Worker，头像等相对路径自动同域），debug `http://10.0.2.2:8787/`（模拟器回环）。运行时可在设置页覆盖（`ServerConfig`，OkHttp 拦截器按当前地址重写请求）。
+- 人机验证：生产登录/注册需 Turnstile token。App 内由 `TurnstileGate` 用隐藏 WebView 加载 `https://x.182030.xyz/turnstile-app`（frontend-x/public/turnstile-app.html，该域名已在验证组件可用域名内）取 token；仅当 `/api/config` 返回 siteKey 时才触发。改动验证页后需重新构建部署 frontend-x。
 - Bearer 认证：`AuthInterceptor` 注入；401 由 `TokenAuthenticator` 单飞刷新重试；token 存 `TokenStore`（DataStore）。
 - 请求模型：`data/ApiModels.kt`。**后端新增字段一律 `@JsonNames` 补充 + 可空默认值**，保持旧 APK 可用。
-- 错误转换统一 `toApiError(Throwable)`，UI 层只消费 message（中文，来自后端）。
+- 错误转换统一 `toApiError(Throwable)`（区分 DNS/超时/SSL/连接拒绝/HTTP 状态并写 logcat），UI 层只消费 message（中文，来自后端）。
 
 ## 目录速览
 

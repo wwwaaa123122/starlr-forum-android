@@ -10,7 +10,6 @@
     <string name="register">注册</string>
     <string name="logout">退出登录</string>
     <string name="settings">设置</string>
-    <string name="tagline">把论坛装进时间线</string>
     <string name="guest">游客</string>
     <string name="latest">最新</string>
     <string name="hot">热门</string>
@@ -20,8 +19,8 @@
     <string name="joined_at">加入</string>
     <string name="unread_all_read">全部已读</string>
     <string name="search_hint">搜索帖子、用户、#标签</string>
-    <string name="title_hint">点亮一个标题…</string>
-    <string name="content_hint">分享你的星际见闻…</string>
+    <string name="title_hint">输入标题…</string>
+    <string name="content_hint">分享你的想法…</string>
     <string name="reply_hint">写下你的回复…</string>
     <string name="empty_feed">还没有帖子</string>
     <string name="empty_notifications">还没有通知</string>

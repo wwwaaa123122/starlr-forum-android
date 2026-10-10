@@ -141,7 +141,7 @@ data class SessionUser(
 /* ---------------- 请求体 ---------------- */
 
 @Serializable
-data class LoginRequest(val identifier: String, val password: String)
+data class LoginRequest(val identifier: String, val password: String, val turnstileToken: String? = null)
 
 @Serializable
 data class RegisterRequest(
@@ -149,6 +149,7 @@ data class RegisterRequest(
     val email: String,
     val password: String,
     val nickname: String? = null,
+    val turnstileToken: String? = null,
 )
 
 @Serializable
@@ -222,6 +223,13 @@ data class ViewResponse(val viewCount: Int? = null)
 
 @Serializable
 data class SimpleOk(val success: Boolean? = null)
+
+@Serializable
+data class SiteConfigResponse(
+    val siteName: String? = null,
+    val turnstileSiteKey: String? = null,
+    val registrationEnabled: Boolean = true,
+)
 
 /** 统一错误体 */
 @Serializable

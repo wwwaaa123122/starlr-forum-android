@@ -181,7 +181,7 @@ fun ExploreScreen(
             if (state.query.isBlank() && state.hotTags.isNotEmpty()) {
                 item {
                     Text(
-                        "正在闪耀",
+                        "热门标签",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),

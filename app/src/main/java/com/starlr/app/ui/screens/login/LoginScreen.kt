@@ -1,5 +1,6 @@
 package com.starlr.app.ui.screens.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,9 +21,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +34,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -42,14 +47,17 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.starlr.app.AppContainer
+import com.starlr.app.R
 import com.starlr.app.data.StarlrRepository
 import com.starlr.app.ui.theme.SlBrand
-import com.starlr.app.ui.theme.SlStar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -57,37 +65,49 @@ import kotlinx.coroutines.launch
 data class AuthUiState(
     val loading: Boolean = false,
     val error: String? = null,
+    val challenge: com.starlr.app.data.TurnstileGate? = null,
 )
 
 /** 登录 / 注册 共用 VM（两个屏共用一个实例会出现状态串扰，这里每屏独立创建） */
-class AuthViewModel(private val repo: StarlrRepository) : ViewModel() {
+class AuthViewModel(private val container: AppContainer) : ViewModel() {
+
+    private val repo = container.repository
 
     private val _state = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state
 
     fun login(identifier: String, password: String, onDone: () -> Unit) {
-        submit { repo.login(identifier, password) }
+        submit { repo.login(identifier, password, it) }
     }
 
     fun register(username: String, email: String, password: String, nickname: String?) {
-        submit { repo.register(username, email, password, nickname) }
+        submit { repo.register(username, email, password, nickname, it) }
     }
 
-    private fun submit(block: suspend () -> Unit) {
+    private fun submit(block: suspend (String?) -> Unit) {
         if (_state.value.loading) return
         _state.value = AuthUiState(loading = true)
         viewModelScope.launch {
-            runCatching { block() }
-                .onSuccess { _state.value = AuthUiState(loading = false) }
-                .onFailure { e ->
-                    _state.value = AuthUiState(loading = false, error = StarlrRepository.toApiError(e).message)
+            try {
+                var token: String? = null
+                val cfg = runCatching { repo.api.siteConfig() }.getOrNull()
+                if (cfg?.turnstileSiteKey != null) {
+                    val gate = com.starlr.app.data.TurnstileGate(container.appContext)
+                    _state.value = AuthUiState(loading = true, challenge = gate)
+                    token = gate.fetchToken()
+                    _state.value = AuthUiState(loading = true)
                 }
+                block(token)
+                _state.value = AuthUiState(loading = false)
+            } catch (e: Exception) {
+                _state.value = AuthUiState(loading = false, error = StarlrRepository.toApiError(e).message)
+            }
         }
     }
 
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = AuthViewModel(container.repository) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = AuthViewModel(container) as T
     }
 }
 
@@ -102,7 +122,11 @@ fun LoginScreen(
     val vm: AuthViewModel = viewModel(factory = AuthViewModel.Factory(container))
     val state by vm.state.collectAsState()
     val session by container.repository.session.collectAsState()
+    val challenge = state.challenge
 
+    DisposableEffect(challenge) {
+        onDispose { challenge?.finish() }
+    }
     var mode by rememberSaveable { mutableStateOf("login") } // login | register
     var identifier by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
@@ -122,19 +146,15 @@ fun LoginScreen(
             .imePadding()
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(84.dp))
+    ) {        Spacer(Modifier.height(84.dp))
         // 品牌区
-        Text("✦", fontSize = 44.sp, color = SlStar)
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher),
+            contentDescription = null,
+            modifier = Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)),
+        )
         Spacer(Modifier.height(10.dp))
         Text("Starlr", fontSize = 32.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "星辰旅人论坛 · 把论坛装进时间线",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
         Spacer(Modifier.height(44.dp))
 
         if (mode == "register") {
@@ -235,11 +255,35 @@ fun LoginScreen(
         Spacer(Modifier.height(14.dp))
         TextButton(onClick = { mode = if (mode == "login") "register" else "login" }) {
             Text(
-                if (mode == "login") "还没有账号？点亮新账号" else "已有账号？去登录",
+                if (mode == "login") "还没有账号？注册一个" else "已有账号？去登录",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = 14.sp,
             )
         }
         Spacer(Modifier.height(40.dp))
+    }
+
+    if (challenge != null) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+        ) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(20.dp),
+                ) {
+                    Text("安全验证中…", fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+                    AndroidView(
+                        factory = { challenge.webView!! },
+                        modifier = Modifier.fillMaxWidth().height(190.dp),
+                    )
+                }
+            }
+        }
     }
 }

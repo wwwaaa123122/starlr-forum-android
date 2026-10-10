@@ -70,7 +70,7 @@ fun PostCard(
                 // 头部：昵称（无则用户名）· @用户名 + 角色徽章
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星旅者" },
+                        text = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "匿名" },
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         maxLines = 1,

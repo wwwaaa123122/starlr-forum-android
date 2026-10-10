@@ -140,7 +140,7 @@ fun HomeScreen(
                         ) {
                             EmptyGlyph("✦")
                             Spacer(Modifier.height(12.dp))
-                            Text("还没有帖子，点亮第一颗星吧", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("还没有帖子", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 } else if (state.error != null && state.posts.isEmpty()) {

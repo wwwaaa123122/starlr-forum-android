@@ -55,8 +55,8 @@ mobile-x/
 
 ## 下载安装
 
-- 仓库内置最新签名包：`apk/starlr-x-v0.1.2-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
-- v0.1.2：直连纯 API `https://i.182030.xyz/`；亮色主题对齐 Web 色板；修复并发 401 刷新竞态与下拉刷新闪空
+- 仓库内置最新签名包：`apk/starlr-x-v0.1.3-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- v0.1.3：登录/注册支持人机验证（WebView 内嵌 Turnstile）；设置页可改服务器地址（便于走自建线路）；网络报错输出具体原因；图标直接使用站点 logo；文案常规化
 - 安装：传输到手机直接安装（需允许“安装未知来源应用”）
 - 升级：同签名直接覆盖安装即可，无需卸载
 

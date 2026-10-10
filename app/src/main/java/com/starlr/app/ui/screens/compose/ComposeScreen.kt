@@ -200,7 +200,7 @@ fun ComposeScreen(
                     OutlinedTextField(
                         value = title,
                         onValueChange = { if (it.length <= TITLE_MAX) title = it },
-                        placeholder = { Text("点亮一个标题…") },
+                        placeholder = { Text("输入标题…") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
@@ -251,7 +251,7 @@ fun ComposeScreen(
             OutlinedTextField(
                 value = content,
                 onValueChange = { if (it.length <= 50_000) content = it },
-                placeholder = { Text(if (replyTo != null) "写下你的回复…" else "分享你的星际见闻…（支持 Markdown）") },
+                placeholder = { Text(if (replyTo != null) "写下你的回复…" else "说点什么…（支持 Markdown）") },
                 minLines = if (replyTo != null) 3 else 8,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),

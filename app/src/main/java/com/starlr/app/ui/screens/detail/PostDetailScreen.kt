@@ -262,7 +262,7 @@ fun PostDetailScreen(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星旅者" },
+                                        (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "匿名" },
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp,
                                         modifier = Modifier.clickable { onOpenUser(post.authorName) },
@@ -487,7 +487,7 @@ private fun ReplyRow(
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    reply.authorName.ifBlank { "星旅者" },
+                    reply.authorName.ifBlank { "匿名" },
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     modifier = Modifier.clickable { onOpenUser(reply.authorName) },

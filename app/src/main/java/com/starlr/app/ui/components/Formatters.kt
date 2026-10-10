@@ -90,7 +90,7 @@ fun stripMarkdown(text: String?): String {
 
 /** 展示名：昵称优先 */
 fun displayName(nickname: String?, username: String?): String =
-    nickname?.takeIf { it.isNotBlank() } ?: username?.takeIf { it.isNotBlank() } ?: "星旅者"
+    nickname?.takeIf { it.isNotBlank() } ?: username?.takeIf { it.isNotBlank() } ?: "匿名"
 
 /** 头像地址：后端返回相对路径时拼接基址 */
 fun avatarUrl(raw: String?, uid: Long?, baseUrl: String): String? {

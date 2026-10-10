@@ -199,7 +199,7 @@ fun ProfileScreen(
         ) {
             EmptyGlyph("✦")
             Spacer(Modifier.height(12.dp))
-            Text("登录后拥有你的星图主页", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("登录后查看你的主页", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))
             TextButton(onClick = onLogin) { Text("去登录") }
         }

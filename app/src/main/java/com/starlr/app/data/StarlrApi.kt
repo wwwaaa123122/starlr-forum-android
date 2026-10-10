@@ -14,6 +14,9 @@ interface StarlrApi {
 
     /* ---------------- 公共 ---------------- */
 
+    @GET("api/config")
+    suspend fun siteConfig(): SiteConfigResponse
+
     @GET("api/categories")
     suspend fun listCategories(): CategoryListResponse
 
