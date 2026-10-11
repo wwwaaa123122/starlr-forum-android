@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -23,7 +24,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
 /**
- * 头像：URL 加载成功时图片覆盖首字母；失败/为空时显示「首字母 + 姓名哈希渐变」圆底。
+ * 头像：无 URL 或加载失败时显示「首字母 + 姓名哈希渐变」圆底；
+ * 图片加载成功后不再垫任何背景，透明区域保持透明。
  */
 @Composable
 fun Avatar(
@@ -32,30 +34,37 @@ fun Avatar(
     size: Dp = 40.dp,
     modifier: Modifier = Modifier,
 ) {
-    val key = name.ifBlank { "星" }
-    val initial = key.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "星"
+    val key = name.ifBlank { "用户" }
+    val initial = key.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "用"
     var hue by remember(key) { mutableStateOf(hueOf(key)) }
+    var imageLoaded by remember(url) { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .size(size)
             .clip(CircleShape)
             .background(
-                Brush.linearGradient(
-                    listOf(
-                        Color.hsl(hue, 0.72f, 0.58f),
-                        Color.hsl((hue + 50f) % 360f, 0.70f, 0.46f),
-                    ),
-                ),
+                if (imageLoaded) {
+                    SolidColor(Color.Transparent)
+                } else {
+                    Brush.linearGradient(
+                        listOf(
+                            Color.hsl(hue, 0.72f, 0.58f),
+                            Color.hsl((hue + 50f) % 360f, 0.70f, 0.46f),
+                        ),
+                    )
+                }
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = initial,
-            color = Color.White,
-            fontSize = (size.value * 0.42f).sp,
-            fontWeight = FontWeight.Bold,
-        )
+        if (!imageLoaded) {
+            Text(
+                text = initial,
+                color = Color.White,
+                fontSize = (size.value * 0.42f).sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
         if (!url.isNullOrBlank()) {
             AsyncImage(
                 model = url,
@@ -64,6 +73,9 @@ fun Avatar(
                     .size(size)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
+                onState = { state ->
+                    imageLoaded = state is coil.compose.AsyncImagePainter.State.Success
+                },
             )
         }
     }
