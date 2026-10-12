@@ -2,8 +2,10 @@ package com.starlr.app.data
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -19,27 +21,29 @@ class TurnstileException(message: String) : Exception(message)
  * 通过隐藏 WebView 加载验证页拿 Turnstile token。
  * 页面固定用 x 域静态文件（该域名已在人机验证组件的可用域名内），
  * token 服务端 siteverify 不区分来源，与当前 API 服务器无关。
+ *
+ * WebView 在构造时（UI 线程）立即创建，保证 challenge 进入组合时一定可用。
  */
 class TurnstileGate(context: Context) {
 
-    private val appContext = context.applicationContext
     private val finished = AtomicBoolean(false)
 
-    var webView: WebView? = null
-        private set
-
     @SuppressLint("SetJavaScriptEnabled")
+    val webView: WebView = WebView(context.applicationContext).apply {
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        addJavascriptInterface(Bridge(), "StarlrAndroid")
+    }
+
+    @Volatile
+    private var continuation: CancellableContinuation<String>? = null
+
     suspend fun fetchToken(): String = try {
         withTimeout(TIMEOUT_MS) {
             withContext(Dispatchers.Main) {
+                webView.loadUrl(PAGE_URL)
                 suspendCancellableCoroutine { cont ->
-                    val wv = WebView(appContext).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        addJavascriptInterface(Bridge(cont), "StarlrAndroid")
-                    }
-                    webView = wv
-                    wv.loadUrl(PAGE_URL)
+                    continuation = cont
                     cont.invokeOnCancellation { finish() }
                 }
             }
@@ -49,24 +53,32 @@ class TurnstileGate(context: Context) {
     }
 
     fun finish() {
-        finished.set(true)
-        val wv = webView ?: return
-        webView = null
-        wv.post {
-            wv.loadUrl("about:blank")
-            wv.destroy()
+        if (finished.getAndSet(true)) return
+        continuation = null
+        webView.post {
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.loadUrl("about:blank")
+            webView.destroy()
         }
     }
 
-    private inner class Bridge(private val cont: kotlinx.coroutines.CancellableContinuation<String>) {
+    private inner class Bridge {
         @JavascriptInterface
         fun onToken(token: String) {
-            if (finished.compareAndSet(false, true)) cont.resume(token)
+            val c = continuation ?: return
+            if (finished.compareAndSet(false, true)) {
+                continuation = null
+                c.resume(token)
+            }
         }
 
         @JavascriptInterface
         fun onError(message: String) {
-            if (finished.compareAndSet(false, true)) cont.resumeWithException(TurnstileException(message))
+            val c = continuation ?: return
+            if (finished.compareAndSet(false, true)) {
+                continuation = null
+                c.resumeWithException(TurnstileException(message))
+            }
         }
     }
 

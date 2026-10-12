@@ -103,6 +103,7 @@ data class User(
     val username: String,
     val nickname: String? = null,
     val avatarUrl: String? = null,
+    val backgroundUrl: String? = null,
     val bio: String? = null,
     val role: String? = null,
     val postCount: Int = 0,

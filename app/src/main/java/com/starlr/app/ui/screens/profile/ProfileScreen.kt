@@ -212,16 +212,29 @@ fun ProfileScreen(
             // 横幅 + 操作按钮
             item {
                 Box {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(SlBrand.copy(alpha = 0.75f), MaterialTheme.colorScheme.tertiary.copy(alpha = 0.55f)),
-                                ),
-                            ),
+                    val bg = com.starlr.app.ui.components.mediaUrl(
+                        user?.backgroundUrl,
+                        com.starlr.app.ui.BuildConfigAware.baseUrl,
                     )
+                    if (bg != null) {
+                        coil.compose.AsyncImage(
+                            model = bg,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxWidth().height(120.dp),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(SlBrand.copy(alpha = 0.75f), MaterialTheme.colorScheme.tertiary.copy(alpha = 0.55f)),
+                                    ),
+                                ),
+                        )
+                    }
                     Row(
                         modifier = Modifier
                             .align(Alignment.TopStart)
@@ -255,8 +268,12 @@ fun ProfileScreen(
                 Column(Modifier.padding(horizontal = 16.dp)) {
                     Box(Modifier.offset(y = (-36).dp)) {
                         Avatar(
-                            url = user?.avatarUrl,
-                            name = user?.username ?: "星",
+                            url = com.starlr.app.ui.components.avatarUrl(
+                                user?.avatarUrl,
+                                user?.uid,
+                                com.starlr.app.ui.BuildConfigAware.baseUrl,
+                            ),
+                            name = user?.username ?: "用",
                             size = 84.dp,
                             modifier = Modifier
                                 .clip(CircleShape)

@@ -279,7 +279,7 @@ fun LoginScreen(
                     Text("安全验证中…", fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(12.dp))
                     AndroidView(
-                        factory = { challenge.webView!! },
+                        factory = { challenge.webView },
                         modifier = Modifier.fillMaxWidth().height(190.dp),
                     )
                 }

@@ -180,7 +180,7 @@ fun SettingsScreen(
             // 账号卡片
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Avatar(
-                    url = state.me?.avatarUrl ?: session.user?.avatarUrl,
+                    url = com.starlr.app.ui.components.mediaUrl(state.me?.avatarUrl ?: session.user?.avatarUrl, com.starlr.app.ui.BuildConfigAware.baseUrl),
                     name = session.user?.username ?: "用户",
                     size = 56.dp,
                 )

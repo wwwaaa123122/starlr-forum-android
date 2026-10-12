@@ -232,7 +232,11 @@ fun ExploreScreen(
                             .padding(horizontal = 16.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Avatar(url = user.avatarUrl, name = user.username, size = 40.dp)
+                        Avatar(
+                            url = com.starlr.app.ui.components.mediaUrl(user.avatarUrl, com.starlr.app.ui.BuildConfigAware.baseUrl),
+                            name = user.username,
+                            size = 40.dp,
+                        )
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(user.nickname?.takeIf { it.isNotBlank() } ?: user.username, fontWeight = FontWeight.Bold)

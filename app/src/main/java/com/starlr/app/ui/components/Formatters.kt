@@ -92,13 +92,15 @@ fun stripMarkdown(text: String?): String {
 fun displayName(nickname: String?, username: String?): String =
     nickname?.takeIf { it.isNotBlank() } ?: username?.takeIf { it.isNotBlank() } ?: "匿名"
 
-/** 头像地址：后端返回相对路径时拼接基址 */
-fun avatarUrl(raw: String?, uid: Long?, baseUrl: String): String? {
-    if (!raw.isNullOrBlank()) {
-        return if (raw.startsWith("http")) raw else baseUrl.trimEnd('/') + (if (raw.startsWith("/")) raw else "/$raw")
-    }
-    return uid?.let { "${baseUrl.trimEnd('/')}/api/avatars/$it" }
+/** 相对路径拼接基址（后端返回 /api/...、/uploads/... 等相对地址时使用） */
+fun mediaUrl(raw: String?, baseUrl: String): String? {
+    if (raw.isNullOrBlank()) return null
+    return if (raw.startsWith("http")) raw else baseUrl.trimEnd('/') + (if (raw.startsWith("/")) raw else "/$raw")
 }
+
+/** 头像地址：优先返回值本身，否则按 UID 回退到默认头像 */
+fun avatarUrl(raw: String?, uid: Long?, baseUrl: String): String? =
+    mediaUrl(raw, baseUrl) ?: uid?.let { "${baseUrl.trimEnd('/')}/api/avatars/$it" }
 
 /** 角色文案 */
 fun roleLabel(role: String?): String? = when (role) {

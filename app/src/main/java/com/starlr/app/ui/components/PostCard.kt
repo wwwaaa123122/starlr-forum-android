@@ -61,7 +61,7 @@ fun PostCard(
         Row {
             Avatar(
                 url = avatarUrl(post.authorAvatar, post.authorUid, baseUrl),
-                name = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "星" },
+                name = (post.authorNickname?.takeIf { it.isNotBlank() } ?: post.authorName).ifBlank { "用" },
                 size = 40.dp,
                 modifier = Modifier.clickable(enabled = onAuthorClick != null) { onAuthorClick?.invoke() },
             )
