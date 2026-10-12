@@ -52,6 +52,9 @@ interface StarlrApi {
     @GET("api/posts/tags")
     suspend fun hotTags(): TagListResponse
 
+    @POST("api/auth/site-login/redeem")
+    suspend fun redeemSiteTicket(@Body body: SiteTicketRedeemRequest): AuthResponse
+
     @GET("api/posts/{id}")
     suspend fun getPost(@Path("id") id: String): PostResponse
 

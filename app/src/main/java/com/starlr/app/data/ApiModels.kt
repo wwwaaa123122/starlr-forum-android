@@ -189,6 +189,9 @@ data class AuthResponse(
 )
 
 @Serializable
+data class SiteTicketRedeemRequest(val ticket: String, val challenge: String, val origin: String)
+
+@Serializable
 data class PostListResponse(val posts: List<Post> = emptyList(), val pagination: Pagination = Pagination())
 
 @Serializable

@@ -55,8 +55,8 @@ mobile-x/
 
 ## 下载安装
 
-- 仓库内置最新签名包：`apk/starlr-x-v0.1.6-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
-- v0.1.6：修复点登录闪退（验证 WebView 未创建即被引用）；个人主页支持用户背景图；修复头像相对路径未拼接基址导致加载失败
+- 仓库内置最新签名包：`apk/starlr-x-v0.1.7-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- v0.1.7：登录/注册改为跳系统浏览器完成人机验证后带一次性票据回跳（SSO），不再内嵌 WebView，彻底解决验证环节闪退
 - 安装：传输到手机直接安装（需允许“安装未知来源应用”）
 - 升级：同签名直接覆盖安装即可，无需卸载
 

@@ -21,11 +21,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,9 +45,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -65,7 +60,7 @@ import kotlinx.coroutines.launch
 data class AuthUiState(
     val loading: Boolean = false,
     val error: String? = null,
-    val challenge: com.starlr.app.data.TurnstileGate? = null,
+    val message: String? = null,
 )
 
 /** 登录 / 注册 共用 VM（两个屏共用一个实例会出现状态串扰，这里每屏独立创建） */
@@ -77,28 +72,32 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<AuthUiState> = _state
 
     fun login(identifier: String, password: String, onDone: () -> Unit) {
-        submit { repo.login(identifier, password, it) }
+        submit("login") { repo.login(identifier, password, it) }
     }
 
     fun register(username: String, email: String, password: String, nickname: String?) {
-        submit { repo.register(username, email, password, nickname, it) }
+        submit("register") { repo.register(username, email, password, nickname, it) }
     }
 
-    private fun submit(block: suspend (String?) -> Unit) {
+    private fun submit(mode: String, block: suspend (String?) -> Unit) {
         if (_state.value.loading) return
         _state.value = AuthUiState(loading = true)
         viewModelScope.launch {
             try {
-                var token: String? = null
                 val cfg = runCatching { repo.api.siteConfig() }.getOrNull()
                 if (cfg?.turnstileSiteKey != null) {
-                    val gate = com.starlr.app.data.TurnstileGate(container.appContext)
-                    _state.value = AuthUiState(loading = true, challenge = gate)
-                    token = gate.fetchToken()
-                    _state.value = AuthUiState(loading = true)
+                    // 生产启用人机验证：跳系统浏览器在网页完成登录/注册，带一次性 ticket 回跳应用
+                    val url = if (mode == "register") StarlrRepository.APP_AUTH_URL + "?mode=register" else StarlrRepository.APP_AUTH_URL
+                    val intent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse(url),
+                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    container.appContext.startActivity(intent)
+                    _state.value = AuthUiState(message = "已在浏览器打开登录页，登录后自动返回应用")
+                } else {
+                    block(null)
+                    _state.value = AuthUiState(loading = false)
                 }
-                block(token)
-                _state.value = AuthUiState(loading = false)
             } catch (e: Exception) {
                 _state.value = AuthUiState(loading = false, error = StarlrRepository.toApiError(e).message)
             }
@@ -122,11 +121,7 @@ fun LoginScreen(
     val vm: AuthViewModel = viewModel(factory = AuthViewModel.Factory(container))
     val state by vm.state.collectAsState()
     val session by container.repository.session.collectAsState()
-    val challenge = state.challenge
 
-    DisposableEffect(challenge) {
-        onDispose { challenge?.finish() }
-    }
     var mode by rememberSaveable { mutableStateOf("login") } // login | register
     var identifier by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
@@ -146,7 +141,8 @@ fun LoginScreen(
             .imePadding()
             .padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-    ) {        Spacer(Modifier.height(84.dp))
+    ) {
+        Spacer(Modifier.height(84.dp))
         // 品牌区
         Image(
             painter = painterResource(R.mipmap.ic_launcher),
@@ -217,6 +213,10 @@ fun LoginScreen(
             Spacer(Modifier.height(10.dp))
             Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
         }
+        state.message?.let {
+            Spacer(Modifier.height(10.dp))
+            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+        }
 
         Spacer(Modifier.height(24.dp))
         Button(
@@ -261,29 +261,5 @@ fun LoginScreen(
             )
         }
         Spacer(Modifier.height(40.dp))
-    }
-
-    if (challenge != null) {
-        Dialog(
-            onDismissRequest = {},
-            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(20.dp),
-                ) {
-                    Text("安全验证中…", fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(12.dp))
-                    AndroidView(
-                        factory = { challenge.webView },
-                        modifier = Modifier.fillMaxWidth().height(190.dp),
-                    )
-                }
-            }
-        }
     }
 }

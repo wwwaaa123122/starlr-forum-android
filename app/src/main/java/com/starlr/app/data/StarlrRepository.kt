@@ -117,6 +117,15 @@ class StarlrRepository(
         _session.value = Session(false)
     }
 
+    /** 浏览器 SSO：用一次性 ticket 兑换当前服务器的会话（deep link 回来后调用） */
+    suspend fun exchangeSiteTicket(ticket: String, challenge: String): User {
+        val res = api.redeemSiteTicket(SiteTicketRedeemRequest(ticket, challenge, APP_SSO_ORIGIN))
+        applyTokens(res)
+        val user = api.me().user
+        _session.value = Session(true, user, 0)
+        return user
+    }
+
     fun resetSession() {
         tokenStore.clear()
         _session.value = Session(false)
@@ -135,12 +144,15 @@ class StarlrRepository(
     }
 
     companion object {
+        /** 浏览器登录桥接页所在源（与 site-login 白名单一致） */
+        const val APP_SSO_ORIGIN = "https://x.182030.xyz"
+        const val APP_AUTH_URL = "https://x.182030.xyz/app-auth"
+
         /** 把 retrofit HttpException / IOException / 其它 Throwable 归一化为 ApiError，保留具体原因 */
         fun toApiError(e: Throwable): ApiError {
             Log.w("StarlrApi", "请求失败: ${e.javaClass.simpleName}: ${e.message}", e)
             return when (e) {
                 is ApiError -> e
-                is TurnstileException -> ApiError(0, "TURNSTILE", e.message ?: "安全验证失败")
                 is HttpException -> {
                     val body = e.response()?.errorBody()?.string()
                     val parsed = body?.let {
