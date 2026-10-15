@@ -143,9 +143,10 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(84.dp))
-        // 品牌区
+        // 品牌区（注意：不能用 R.mipmap.ic_launcher——API 26+ 解析为 adaptive icon XML，
+        // painterResource 只支持矢量/位图，会抛 IllegalArgumentException 闪退，故用 drawable-nodpi 位图）
         Image(
-            painter = painterResource(R.mipmap.ic_launcher),
+            painter = painterResource(R.drawable.login_logo),
             contentDescription = null,
             modifier = Modifier.size(72.dp).clip(RoundedCornerShape(18.dp)),
         )
