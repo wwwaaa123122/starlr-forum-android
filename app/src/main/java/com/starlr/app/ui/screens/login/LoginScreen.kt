@@ -51,11 +51,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.starlr.app.AppContainer
 import com.starlr.app.R
+import com.starlr.app.data.AppLoginPrepareRequest
+import com.starlr.app.data.AppLoginPrepareResponse
 import com.starlr.app.data.StarlrRepository
 import com.starlr.app.ui.theme.SlBrand
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 
 data class AuthUiState(
     val loading: Boolean = false,
@@ -72,30 +75,81 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<AuthUiState> = _state
 
     fun login(identifier: String, password: String, onDone: () -> Unit) {
-        submit("login") { repo.login(identifier, password, it) }
+        submit(
+            mode = "login",
+            prepare = {
+                repo.api.prepareAppLogin(
+                    AppLoginPrepareRequest(mode = "login", password = password, identifier = identifier.trim()),
+                )
+            },
+        ) { repo.login(identifier, password, it) }
     }
 
     fun register(username: String, email: String, password: String, nickname: String?) {
-        submit("register") { repo.register(username, email, password, nickname, it) }
+        submit(
+            mode = "register",
+            prepare = {
+                repo.api.prepareAppLogin(
+                    AppLoginPrepareRequest(
+                        mode = "register",
+                        password = password,
+                        username = username.trim(),
+                        email = email.trim(),
+                        nickname = nickname?.trim()?.ifEmpty { null },
+                    ),
+                )
+            },
+        ) { repo.register(username, email, password, nickname, it) }
     }
 
-    private fun submit(mode: String, block: suspend (String?) -> Unit) {
+    private fun submit(
+        mode: String,
+        prepare: suspend () -> AppLoginPrepareResponse,
+        direct: suspend (String?) -> Unit,
+    ) {
         if (_state.value.loading) return
         _state.value = AuthUiState(loading = true)
         viewModelScope.launch {
             try {
                 val cfg = runCatching { repo.api.siteConfig() }.getOrNull()
                 if (cfg?.turnstileSiteKey != null) {
-                    // 生产启用人机验证：跳系统浏览器在网页完成登录/注册，带一次性 ticket 回跳应用
-                    val url = if (mode == "register") StarlrRepository.APP_AUTH_URL + "?mode=register" else StarlrRepository.APP_AUTH_URL
-                    val intent = android.content.Intent(
-                        android.content.Intent.ACTION_VIEW,
-                        android.net.Uri.parse(url),
-                    ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                    container.appContext.startActivity(intent)
-                    _state.value = AuthUiState(message = "已在浏览器打开登录页，登录后自动返回应用")
+                    // 生产启用人机验证：应用内先校验凭据换一次性预授权（preauth），再跳系统浏览器
+                    // 完成一次 Turnstile 确认后带 ticket 回跳——密码全程只输一遍。
+                    // 旧后端无此接口（404）时退回旧行为：直接跳网页表单登录。
+                    val preauthUrl = runCatching { prepare() }
+                        .map { pre ->
+                            val query = buildString {
+                                append("preauth=")
+                                append(URLEncoder.encode(pre.preauth, "UTF-8"))
+                                append("&mode=")
+                                append(mode)
+                                pre.name?.takeIf { it.isNotEmpty() }?.let {
+                                    append("&name=")
+                                    append(URLEncoder.encode(it, "UTF-8"))
+                                }
+                            }
+                            StarlrRepository.APP_AUTH_URL + "?" + query
+                        }
+                        .getOrElse { e ->
+                            if (StarlrRepository.toApiError(e).httpStatus == 404) null else throw StarlrRepository.toApiError(e)
+                        }
+                    val url = preauthUrl
+                        ?: (StarlrRepository.APP_AUTH_URL + if (mode == "register") "?mode=register" else "")
+                    container.appContext.startActivity(
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(url),
+                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                    _state.value = AuthUiState(
+                        message = if (preauthUrl != null) {
+                            "将在浏览器完成一次人机验证（无需再次输入密码），完成后自动返回应用"
+                        } else {
+                            "已在浏览器打开登录页，登录后自动返回应用"
+                        },
+                    )
                 } else {
-                    block(null)
+                    direct(null)
                     _state.value = AuthUiState(loading = false)
                 }
             } catch (e: Exception) {

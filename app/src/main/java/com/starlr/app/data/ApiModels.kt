@@ -191,6 +191,25 @@ data class AuthResponse(
 @Serializable
 data class SiteTicketRedeemRequest(val ticket: String, val challenge: String, val origin: String)
 
+/** 应用登录凭据预交接：先在应用内校验密码，再跳浏览器完成 Turnstile（密码只输一遍） */
+@Serializable
+data class AppLoginPrepareRequest(
+    val mode: String,
+    val password: String,
+    @JsonNames("identifier") val identifier: String? = null,
+    @JsonNames("username") val username: String? = null,
+    @JsonNames("email") val email: String? = null,
+    @JsonNames("nickname") val nickname: String? = null,
+)
+
+@Serializable
+data class AppLoginPrepareResponse(
+    @JsonNames("preauth") val preauth: String = "",
+    @JsonNames("expiresIn") val expiresIn: Int? = null,
+    @JsonNames("mode") val mode: String? = null,
+    @JsonNames("name") val name: String? = null,
+)
+
 @Serializable
 data class PostListResponse(val posts: List<Post> = emptyList(), val pagination: Pagination = Pagination())
 

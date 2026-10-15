@@ -20,7 +20,7 @@ cd mobile-x && ./gradlew :app:assembleRelease   # 产物 app/build/outputs/apk/r
 ## API 约定
 
 - Base URL：`BuildConfig.API_BASE_URL` — release `https://i.182030.xyz/`（纯 API Worker，头像等相对路径自动同域），debug `http://10.0.2.2:8787/`（模拟器回环）。运行时可在设置页覆盖（`ServerConfig`，OkHttp 拦截器按当前地址重写请求）。
-- 人机验证：生产登录/注册走**浏览器 SSO**——App 跳系统浏览器打开 `https://x.182030.xyz/app-auth`（frontend-x/public/app-auth.html，网页内完成 Turnstile + 账密/注册），网页用现有 `site-login` 基建签发一次性 ticket（120s、单次、哈希存储、绑定 origin+challenge），经 `starlr://auth?ticket=&challenge=` 深链回跳，App 调 `site-login/redeem` 由**当前服务器自签** JWT。x.182030.xyz 已加入 SSO 白名单（KV `config:sso` + 代码默认值）。`/api/config` 无 siteKey（本地 dev）时仍走表单直登。改动桥接页后需重新构建部署 frontend-x。
+- 人机验证：生产登录/注册走**浏览器 SSO + 凭据预交接（preauth）**——App 先调 `app-login/prepare` 在应用内校验账号密码换一次性 preauth（不发会话，复用登录 IP+单账号双重限流），再跳系统浏览器打开 `https://x.182030.xyz/app-auth?preauth=…`（frontend-x/public/app-auth.html），网页只做 Turnstile 人机验证（**无需重输密码**），后端 `app-login/confirm` 消费 preauth 签发一次性 ticket（120s、单次、哈希存储、绑定 origin+challenge），经 `starlr://auth?ticket=&challenge=` 深链回跳，App 调 `site-login/redeem` 由**当前服务器自签** JWT。旧后端无 prepare（404）时 App 自动退回网页表单登录；注册的建号与验证邮件在 confirm 步完成（KV 不存明文密码）。`/api/config` 无 siteKey（本地 dev）时仍走表单直登。改动桥接页后需重新构建部署 frontend-x。
 - Bearer 认证：`AuthInterceptor` 注入；401 由 `TokenAuthenticator` 单飞刷新重试；token 存 `TokenStore`（DataStore）。
 - 请求模型：`data/ApiModels.kt`。**后端新增字段一律 `@JsonNames` 补充 + 可空默认值**，保持旧 APK 可用。
 - 错误转换统一 `toApiError(Throwable)`（区分 DNS/超时/SSL/连接拒绝/HTTP 状态并写 logcat），UI 层只消费 message（中文，来自后端）。

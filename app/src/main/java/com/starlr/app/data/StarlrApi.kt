@@ -55,6 +55,9 @@ interface StarlrApi {
     @POST("api/auth/site-login/redeem")
     suspend fun redeemSiteTicket(@Body body: SiteTicketRedeemRequest): AuthResponse
 
+    @POST("api/auth/app-login/prepare")
+    suspend fun prepareAppLogin(@Body body: AppLoginPrepareRequest): AppLoginPrepareResponse
+
     @GET("api/posts/{id}")
     suspend fun getPost(@Path("id") id: String): PostResponse
 
