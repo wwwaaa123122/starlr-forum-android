@@ -21,8 +21,8 @@ android {
         applicationId = "com.starlr.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.1.9"
+        versionCode = 11
+        versionName = "0.1.10"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.browser)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)

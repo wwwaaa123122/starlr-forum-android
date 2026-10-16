@@ -211,6 +211,15 @@ data class AppLoginPrepareResponse(
 )
 
 @Serializable
+data class AppUpdateInfo(
+    @JsonNames("versionCode") val versionCode: Int = 0,
+    @JsonNames("versionName") val versionName: String? = null,
+    @JsonNames("hash") val hash: String? = null,
+    @JsonNames("notes") val notes: String? = null,
+    @JsonNames("url") val url: String? = null,
+)
+
+@Serializable
 data class PostListResponse(val posts: List<Post> = emptyList(), val pagination: Pagination = Pagination())
 
 @Serializable

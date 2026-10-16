@@ -25,8 +25,13 @@ class TokenStore(private val prefs: SharedPreferences) {
         refreshToken = null
     }
 
+    var skippedUpdateVersion: Int
+        get() = prefs.getInt(KEY_SKIPPED_UPDATE, 0)
+        set(value) = prefs.edit().putInt(KEY_SKIPPED_UPDATE, value).apply()
+
     companion object {
         private const val KEY_ACCESS = "starlr.access"
         private const val KEY_REFRESH = "starlr.refresh"
+        private const val KEY_SKIPPED_UPDATE = "starlr.skipped_update_version"
     }
 }

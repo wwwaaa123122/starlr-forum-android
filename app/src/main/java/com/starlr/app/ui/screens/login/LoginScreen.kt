@@ -66,6 +66,25 @@ data class AuthUiState(
     val message: String? = null,
 )
 
+private fun openAuthBrowser(context: android.content.Context, url: String) {
+    try {
+        val tabsIntent = androidx.browser.customtabs.CustomTabsIntent.Builder()
+            .setDefaultColorSchemeParams(
+                androidx.browser.customtabs.CustomTabColorSchemeParams.Builder()
+                    .setToolbarColor(android.graphics.Color.parseColor("#090C1F"))
+                    .build(),
+            )
+            .build()
+        tabsIntent.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        tabsIntent.launchUrl(context, android.net.Uri.parse(url))
+    } catch (e: Exception) {
+        context.startActivity(
+            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+    }
+}
+
 /** 登录 / 注册 共用 VM（两个屏共用一个实例会出现状态串扰，这里每屏独立创建） */
 class AuthViewModel(private val container: AppContainer) : ViewModel() {
 
@@ -135,12 +154,7 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
                         }
                     val url = preauthUrl
                         ?: (StarlrRepository.APP_AUTH_URL + if (mode == "register") "?mode=register" else "")
-                    container.appContext.startActivity(
-                        android.content.Intent(
-                            android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse(url),
-                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
+                    openAuthBrowser(container.appContext, url)
                     _state.value = AuthUiState(
                         message = if (preauthUrl != null) {
                             "将在浏览器完成一次人机验证（无需再次输入密码），完成后自动返回应用"

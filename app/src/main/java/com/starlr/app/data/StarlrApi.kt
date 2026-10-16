@@ -58,6 +58,9 @@ interface StarlrApi {
     @POST("api/auth/app-login/prepare")
     suspend fun prepareAppLogin(@Body body: AppLoginPrepareRequest): AppLoginPrepareResponse
 
+    @GET("api/app/latest")
+    suspend fun appLatest(): AppUpdateInfo
+
     @GET("api/posts/{id}")
     suspend fun getPost(@Path("id") id: String): PostResponse
 
