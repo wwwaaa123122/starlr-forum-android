@@ -2,6 +2,7 @@ package com.starlr.app.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -177,7 +179,41 @@ fun SettingsScreen(
         }
 
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            // 账号卡片
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+            ) {
+                com.starlr.app.ui.components.ProfileBanner(
+                    backgroundUrl = com.starlr.app.ui.components.mediaUrl(
+                        state.me?.backgroundUrl ?: session.user?.backgroundUrl,
+                        com.starlr.app.ui.BuildConfigAware.baseUrl,
+                    ),
+                    modifier = Modifier.matchParentSize(),
+                )
+                Avatar(
+                    url = com.starlr.app.ui.components.mediaUrl(state.me?.avatarUrl ?: session.user?.avatarUrl, com.starlr.app.ui.BuildConfigAware.baseUrl),
+                    name = session.user?.username ?: "用户",
+                    size = 52.dp,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(10.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.background, androidx.compose.foundation.shape.CircleShape)
+                        .padding(2.dp),
+                )
+                Text(
+                    session.user?.nickname?.takeIf { it.isNotBlank() } ?: session.user?.username ?: "",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp),
+                )
+            }
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Avatar(
                     url = com.starlr.app.ui.components.mediaUrl(state.me?.avatarUrl ?: session.user?.avatarUrl, com.starlr.app.ui.BuildConfigAware.baseUrl),
