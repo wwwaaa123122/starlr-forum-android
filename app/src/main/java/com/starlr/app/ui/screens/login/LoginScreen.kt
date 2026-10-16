@@ -50,6 +50,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.starlr.app.AppContainer
+import com.starlr.app.AuthBridgeActivity
 import com.starlr.app.R
 import com.starlr.app.data.AppLoginPrepareRequest
 import com.starlr.app.data.AppLoginPrepareResponse
@@ -152,9 +153,18 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
                         .getOrElse { e ->
                             if (StarlrRepository.toApiError(e).httpStatus == 404) null else throw StarlrRepository.toApiError(e)
                         }
-                    val url = preauthUrl
-                        ?: (StarlrRepository.APP_AUTH_URL + if (mode == "register") "?mode=register" else "")
-                    openAuthBrowser(container.appContext, url)
+                    if (preauthUrl != null) {
+                        container.appContext.startActivity(
+                            android.content.Intent(container.appContext, AuthBridgeActivity::class.java)
+                                .putExtra(AuthBridgeActivity.EXTRA_URL, preauthUrl)
+                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    } else {
+                        openAuthBrowser(
+                            container.appContext,
+                            StarlrRepository.APP_AUTH_URL + if (mode == "register") "?mode=register" else "",
+                        )
+                    }
                     _state.value = AuthUiState(
                         message = if (preauthUrl != null) {
                             "将在浏览器完成一次人机验证（无需再次输入密码），完成后自动返回应用"

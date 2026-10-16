@@ -55,7 +55,8 @@ mobile-x/
 
 ## 下载安装
 
-- 仓库内置最新签名包：`apk/starlr-x-v0.1.10-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- 仓库内置最新签名包：`apk/starlr-x-v0.1.11-release.apk`（约 2MB，minSdk 26 / targetSdk 35，已用 `keystore/` 密钥签名）
+- v0.1.11：人机验证整段收进应用内（内嵌 WebView 完成确认并自动兑换会话），修复 Custom Tabs 下「人机校验失败」；顶部带返回可随时取消
 - v0.1.10：登录/注册的网页在应用内打开（Custom Tabs，完成验证自动回应用）；新增启动静默更新检测，有新版本弹窗提示，可跳过
 - v0.1.9：登录/注册密码只需在应用内输一遍——应用先本地校验凭据换取一次性预授权，跳浏览器仅完成人机验证即自动返回（无需在网页重输密码）；错误密码直接在应用内提示
 - v0.1.8：修复登录页闪退（启动图标 adaptive icon XML 不被 painterResource 支持，改用站点 logo 位图资源）
