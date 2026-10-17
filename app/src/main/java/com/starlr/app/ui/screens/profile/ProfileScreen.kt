@@ -414,7 +414,18 @@ fun ProfileScreen(
                     ) {
                         EmptyGlyph("✦")
                         Spacer(Modifier.height(10.dp))
-                        Text(if (tab == 0) "还没有帖子" else "还没有回复", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // 加载失败显示具体错误（含 HTTP 状态与后端 code/message），便于排查
+                        Text(
+                            state.error ?: if (tab == 0) "还没有帖子" else "还没有回复",
+                            color = if (state.error != null) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                        )
+                        if (state.error != null) {
+                            Spacer(Modifier.height(12.dp))
+                            TextButton(onClick = { vm.refresh() }) { Text("重试") }
+                        }
                     }
                 }
             }

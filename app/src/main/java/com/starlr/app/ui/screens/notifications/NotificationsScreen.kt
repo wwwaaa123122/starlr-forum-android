@@ -194,7 +194,17 @@ fun NotificationsScreen(
                     ) {
                         EmptyGlyph("✦")
                         Spacer(Modifier.height(12.dp))
-                        Text("还没有通知，当有人与你互动时星光会在这里闪烁", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            state.error ?: "还没有通知，当有人与你互动时星光会在这里闪烁",
+                            color = if (state.error != null) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                        )
+                        if (state.error != null) {
+                            Spacer(Modifier.height(12.dp))
+                            TextButton(onClick = { vm.load(refresh = true) }) { Text("重试") }
+                        }
                     }
                 }
             }

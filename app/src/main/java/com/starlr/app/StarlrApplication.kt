@@ -19,11 +19,12 @@ class AppContainer(context: Context) {
     val repository: StarlrRepository = StarlrRepository(
         serverConfig = serverConfig,
         tokenStore = tokenStore,
-        onSessionExpired = { /* 会话状态由 Repository 内部 StateFlow 通知 UI */ },
+        onSessionExpired = { this@AppContainer.repository.onSessionExpired() },
     )
 
     init {
         BuildConfigAware.provider = { serverConfig.current }
+        // UI 扩展点：会话过期时可监听跳转登录（StateFlow 更新已在 Repository.onSessionExpired 内）
     }
 }
 

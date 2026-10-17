@@ -53,6 +53,8 @@ class TokenAuthenticator(
             return try {
                 bareClient.newCall(request).execute().use { res ->
                     if (!res.isSuccessful) {
+                        val errBody = res.body?.string().orEmpty().take(300)
+                        android.util.Log.w("TokenAuthenticator", "刷新失败 HTTP ${res.code}: $errBody")
                         tokenStore.clear()
                         onSessionExpired()
                         return null
@@ -72,7 +74,8 @@ class TokenAuthenticator(
                         .header("X-Starlr-Retry", "1")
                         .build()
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.w("TokenAuthenticator", "刷新异常: ${e.javaClass.simpleName}: ${e.message}")
                 null
             }
         }

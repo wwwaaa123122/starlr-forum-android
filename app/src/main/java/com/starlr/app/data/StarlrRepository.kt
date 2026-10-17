@@ -159,10 +159,13 @@ class StarlrRepository(
         return res.url ?: throw ApiError(500, "NO_URL", "上传响应缺少图片地址")
     }
 
-    /** 会话过期（由 Authenticator 回调） */
+    /** 会话过期（由 Authenticator 回调）；外部附加回调（UI 跳转登录）经此注册 */
+    var onSessionExpiredListener: (() -> Unit)? = null
+
     fun onSessionExpired() {
         tokenStore.clear()
         _session.value = Session(false)
+        onSessionExpiredListener?.invoke()
     }
 
     companion object {
