@@ -1,8 +1,8 @@
-# 签名密钥（随私密仓库 git@github.com:wwwaaa123122/starlr-forum-android.git 托管）
+# 签名密钥（不入库，本地持有）
 
 - `starlr-release.jks`：Starlr Android 发布签名密钥（RSA 2048，有效期 10000 天，别名 `starlr`）
 - 口令在同目录 `keystore.properties`（构建脚本自动读取，`storePassword`/`keyPassword` 相同）
-- ⚠️ 该仓库必须保持 **Private**；切勿把本目录或口令同步到任何公开仓库/CI 日志
+- ⚠️ 本目录与 `keystore.properties` 已从 git 历史移除并加入 `.gitignore`，仓库转公开后也不会入库
 - 密钥丢失将无法覆盖安装升级（需卸载重装），请自行另行备份 `starlr-release.jks` 与口令
 
 ## 构建已签名 release 包

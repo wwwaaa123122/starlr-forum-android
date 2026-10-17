@@ -8,3 +8,7 @@ captures/
 .externalNativeBuild/
 .cxx/
 .kotlin/
+
+# 签名密钥（不入库）
+keystore.properties
+keystore/starlr-release.jks
