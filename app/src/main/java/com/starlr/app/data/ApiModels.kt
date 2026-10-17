@@ -279,3 +279,11 @@ data class ApiErrorBody(val error: ApiErrorDetail = ApiErrorDetail())
 
 @Serializable
 data class ApiErrorDetail(val code: String = "UNKNOWN", val message: String = "请求失败")
+
+@Serializable
+data class ReportRequest(
+    val targetType: String,
+    val targetId: String,
+    val reason: String,
+    val detail: String = "",
+)

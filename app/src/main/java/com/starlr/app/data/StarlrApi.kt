@@ -98,6 +98,9 @@ interface StarlrApi {
     @POST("api/posts/{id}/replies")
     suspend fun createReply(@Path("id") postId: String, @Body body: CreateReplyRequest)
 
+    @POST("api/reports")
+    suspend fun createReport(@Body body: ReportRequest)
+
     @POST("api/replies/{id}/like")
     suspend fun likeReply(@Path("id") id: String)
 

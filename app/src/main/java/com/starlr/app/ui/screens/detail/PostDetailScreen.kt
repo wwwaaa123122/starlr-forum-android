@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +59,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starlr.app.AppContainer
 import com.starlr.app.data.CreateReplyRequest
+import com.starlr.app.data.ReportRequest
 import com.starlr.app.data.Post
 import com.starlr.app.data.Reply
 import com.starlr.app.data.UpdatePostRequest
@@ -207,6 +209,12 @@ class PostDetailViewModel(private val repo: StarlrRepository) : ViewModel() {
             }
         }
     }
+    fun report(targetType: String, targetId: String, reason: String, detail: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            val res = runCatching { repo.api.createReport(ReportRequest(targetType, targetId, reason, detail.trim())) }
+            onDone(res.exceptionOrNull()?.message)
+        }
+    }
 
     fun setReplyTo(reply: Reply?) {
         _state.value = _state.value.copy(replyTo = reply)
@@ -257,6 +265,8 @@ fun PostDetailScreen(
     var editReplyTarget by remember { mutableStateOf<Reply?>(null) }
     val session by container.repository.session.collectAsState()
     val myUserId = session.user?.id
+    var reportTarget by remember { mutableStateOf<Pair<String, String>?>(null) } // targetType to label
+    var reportMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(postId) { vm.bind(postId) }
 
@@ -304,6 +314,18 @@ fun PostDetailScreen(
                                     )
                                     Spacer(Modifier.width(6.dp))
                                     RoleBadge(post.authorRole, post.authorUid)
+                                    if (loggedIn && !post.isAuthor) {
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "举报",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(999.dp))
+                                                .clickable { reportTarget = "post" to post.id }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        )
+                                    }
                                     if (post.isAuthor || post.canModerate) {
                                         Spacer(Modifier.width(8.dp))
                                         Text(
@@ -422,6 +444,7 @@ fun PostDetailScreen(
                         onLike = { vm.likeReply(it) },
                         onReplyTo = { vm.setReplyTo(it); if (!loggedIn) onLogin() },
                         onEdit = if (reply.authorId == myUserId || state.post?.canModerate == true) ({ editReplyTarget = it }) else null,
+                        onReport = if (loggedIn && reply.authorId != myUserId) ({ reportTarget = "reply" to reply.id }) else null,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
@@ -554,6 +577,26 @@ fun PostDetailScreen(
             },
         )
     }
+    reportMessage?.let { msg ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { reportMessage = null },
+            title = { Text("举报") },
+            text = { Text(msg) },
+            confirmButton = { TextButton(onClick = { reportMessage = null }) { Text("好的") } },
+        )
+    }
+    // 举报对话框
+    reportTarget?.let { (type, targetId) ->
+        ReportDialog(
+            onDismiss = { reportTarget = null },
+            onSubmit = { reason, detail ->
+                reportTarget = null
+                vm.report(type, targetId, reason, detail) { err ->
+                    reportMessage = err?.let { "举报失败：$it" } ?: "举报已提交，感谢守护社区"
+                }
+            },
+        )
+    }
     }
 }
 
@@ -567,13 +610,14 @@ private fun ReplyBlock(
     onLike: (Reply) -> Unit,
     onReplyTo: (Reply) -> Unit,
     onEdit: ((Reply) -> Unit)? = null,
+    onReport: (() -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
-        ReplyRow(reply = reply, onOpenUser = onOpenUser, onLike = onLike, onReplyTo = onReplyTo, onEdit = onEdit, indented = false)
+        ReplyRow(reply = reply, onOpenUser = onOpenUser, onLike = onLike, onReplyTo = onReplyTo, onEdit = onEdit, onReport = onReport, indented = false)
         children.forEach { child ->
             Spacer(Modifier.height(8.dp))
             Box(Modifier.padding(start = 30.dp)) {
-                ReplyRow(reply = child, onOpenUser = onOpenUser, onLike = onLike, onReplyTo = onReplyTo, indented = true)
+                ReplyRow(reply = child, onOpenUser = onOpenUser, onLike = onLike, onReplyTo = onReplyTo, onEdit = null, onReport = onReport, indented = true)
             }
         }
     }
@@ -586,6 +630,7 @@ private fun ReplyRow(
     onLike: (Reply) -> Unit,
     onReplyTo: (Reply) -> Unit,
     onEdit: ((Reply) -> Unit)? = null,
+    onReport: (() -> Unit)? = null,
     indented: Boolean = false,
 ) {
     val liked = reply.liked?.value == true
@@ -624,6 +669,18 @@ private fun ReplyRow(
                 if (reply.editedAt != null) {
                     Spacer(Modifier.width(6.dp))
                     Text("已修改", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                onReport?.let { cb ->
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "举报",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable { cb() }
+                            .padding(horizontal = 4.dp),
+                    )
                 }
                 reply.replyToUserName?.let {
                     Spacer(Modifier.width(6.dp))
@@ -710,5 +767,55 @@ private fun EditDialog(
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !saving) { Text("取消") }
         },
+    )
+}
+
+/** 举报对话框：原因单选 + 补充说明（可选） */
+@Composable
+private fun ReportDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (reason: String, detail: String) -> Unit,
+) {
+    val reasons = listOf(
+        "spam" to "垃圾广告",
+        "abuse" to "人身攻击",
+        "porn" to "色情低俗",
+        "illegal" to "违法信息",
+        "other" to "其他",
+    )
+    var reason by remember { mutableStateOf("spam") }
+    var detail by remember { mutableStateOf("") }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("举报", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("选择举报原因", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                reasons.forEach { (value, label) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { reason = value }
+                            .padding(vertical = 6.dp, horizontal = 4.dp),
+                    ) {
+                        RadioButton(selected = reason == value, onClick = { reason = value })
+                        Text(label, fontSize = 15.sp)
+                    }
+                }
+                OutlinedTextField(
+                    value = detail,
+                    onValueChange = { detail = it },
+                    label = { Text("补充说明（可选）") },
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSubmit(reason, detail) }) { Text("提交") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
 }
