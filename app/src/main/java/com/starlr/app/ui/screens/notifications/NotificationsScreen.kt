@@ -48,6 +48,9 @@ import com.starlr.app.data.Notification
 import com.starlr.app.data.StarlrRepository
 import com.starlr.app.ui.components.Avatar
 import com.starlr.app.ui.components.EmptyGlyph
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -262,6 +265,8 @@ private fun NotificationRow(notification: Notification, onClick: () -> Unit) {
                         "reply" -> "回复了你"
                         "mention" -> "提及了你"
                         "favorite" -> "收藏了你的帖子"
+                        "moderation" -> "系统消息"
+                        "system" -> "系统消息"
                         else -> "赞了你"
                     },
                     fontSize = 14.sp,
@@ -274,8 +279,16 @@ private fun NotificationRow(notification: Notification, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            notification.content?.let {
-                Text(it, fontSize = 14.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            notification.content?.let { raw ->
+                val display = runCatching {
+                    val obj = kotlinx.serialization.json.Json.parseToJsonElement(raw).jsonObject
+                    val t = obj["title"]?.jsonPrimitive?.content
+                    val b = obj["body"]?.jsonPrimitive?.content
+                    listOfNotNull(t?.takeIf { it.isNotBlank() }, b?.takeIf { it.isNotBlank() }).joinToString("：")
+                }.getOrDefault(raw)
+                if (display.isNotBlank()) {
+                    Text(display, fontSize = 14.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
             }
             notification.postTitle?.let {
                 Text(
