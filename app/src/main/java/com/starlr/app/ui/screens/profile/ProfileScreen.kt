@@ -279,10 +279,10 @@ fun ProfileScreen(
                 }
             }
 
-            // 头像嵌入背景图下缘 + 基本信息
+            // 头像叠压背景图下缘（圆形） + 基本信息
             item {
                 Column(Modifier.padding(horizontal = 16.dp)) {
-                    Box(Modifier.height(42.dp)) {
+                    Box(Modifier.offset(y = (-36).dp)) {
                         Avatar(
                             url = com.starlr.app.ui.components.avatarUrl(
                                 user?.avatarUrl,
@@ -292,7 +292,6 @@ fun ProfileScreen(
                             name = user?.username ?: "用",
                             size = 84.dp,
                             modifier = Modifier
-                                .offset(y = (-42).dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.background, CircleShape)
                                 .padding(3.dp),
