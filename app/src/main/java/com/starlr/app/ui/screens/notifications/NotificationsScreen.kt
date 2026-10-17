@@ -133,6 +133,7 @@ fun NotificationsScreen(
     container: AppContainer,
     loggedIn: Boolean,
     onOpenPost: (String) -> Unit,
+    onOpenReports: (() -> Unit)? = null,
     onLogin: () -> Unit,
     onUnreadChanged: () -> Unit,
 ) {
@@ -178,7 +179,11 @@ fun NotificationsScreen(
                         vm.markRead(n.id, onChanged = onUnreadChanged)
                     }
                     val target = n.postId
-                    if (!target.isNullOrBlank()) onOpenPost(target)
+                    if (!target.isNullOrBlank()) {
+                        onOpenPost(target)
+                    } else if (n.type == "moderation" && onOpenReports != null) {
+                        onOpenReports()
+                    }
                 })
                 Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
             }

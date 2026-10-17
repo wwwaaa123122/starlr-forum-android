@@ -50,6 +50,7 @@ import com.starlr.app.ui.screens.login.LoginScreen
 import com.starlr.app.ui.screens.notifications.NotificationsScreen
 import com.starlr.app.ui.screens.profile.ProfileScreen
 import com.starlr.app.ui.screens.settings.SettingsScreen
+import com.starlr.app.ui.screens.admin.AdminReportsScreen
 import com.starlr.app.ui.screens.SessionViewModel
 
 object Routes {
@@ -58,6 +59,7 @@ object Routes {
     const val NOTIFICATIONS = "notifications"
     const val ME = "me"
     const val BOOKMARKS = "bookmarks"
+    const val ADMIN_REPORTS = "admin/reports"
     const val PROFILE = "u/{username}"
     const val DETAIL = "post/{postId}"
     const val COMPOSE = "compose?replyTo={replyTo}"
@@ -180,6 +182,7 @@ fun StarlrApp(container: AppContainer) {
                         container = container,
                         loggedIn = session.loggedIn,
                         onOpenPost = { nav.navigate(Routes.detail(it)) },
+                        onOpenReports = { nav.navigate(Routes.ADMIN_REPORTS) },
                         onLogin = { nav.navigate(Routes.LOGIN) },
                         onUnreadChanged = { sessionVm.refreshUnread() },
                     )
@@ -254,6 +257,19 @@ fun StarlrApp(container: AppContainer) {
                         container = container,
                         onDone = { nav.popBackStack() },
                     )
+                }
+                composable(Routes.ADMIN_REPORTS) {
+                    val canModerate = session.user?.role == "admin" || session.user?.role == "moderator"
+                    if (canModerate) {
+                        AdminReportsScreen(
+                            container = container,
+                            onBack = { nav.popBackStack() },
+                            onOpenPost = { nav.navigate(Routes.detail(it)) },
+                        )
+                    } else {
+                        // 非管理角色不可进入（后端 JWT 鉴权兜底）
+                        nav.popBackStack()
+                    }
                 }
                 composable(Routes.SETTINGS) {
                     SettingsScreen(

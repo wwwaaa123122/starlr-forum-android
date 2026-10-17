@@ -101,6 +101,15 @@ interface StarlrApi {
     @POST("api/reports")
     suspend fun createReport(@Body body: ReportRequest)
 
+    @GET("api/admin/reports")
+    suspend fun adminReports(@Query("page") page: Int = 1, @Query("pageSize") pageSize: Int = 30, @Query("status") status: String = "pending"): AdminReportListResponse
+
+    @POST("api/admin/reports/{id}/resolve")
+    suspend fun resolveReport(@Path("id") id: String, @Body body: HandleReportRequest)
+
+    @POST("api/admin/reports/{id}/dismiss")
+    suspend fun dismissReport(@Path("id") id: String, @Body body: HandleReportRequest)
+
     @POST("api/replies/{id}/like")
     suspend fun likeReply(@Path("id") id: String)
 

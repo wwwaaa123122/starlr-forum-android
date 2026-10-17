@@ -287,3 +287,33 @@ data class ReportRequest(
     val reason: String,
     val detail: String = "",
 )
+
+@Serializable
+data class AdminReport(
+    val id: String,
+    val targetType: String = "",
+    val targetId: String = "",
+    val reason: String = "",
+    val detail: String? = null,
+    val status: String = "pending",
+    val resolutionNote: String? = null,
+    val createdAt: String = "",
+    val handledAt: String? = null,
+    val reporterName: String? = null,
+    val targetTitle: String? = null,
+    val targetContent: String? = null,
+    val targetAuthorName: String? = null,
+    val targetDeleted: FlexibleBool? = null,
+)
+
+@Serializable
+data class AdminReportListResponse(
+    val reports: List<AdminReport> = emptyList(),
+)
+
+@Serializable
+data class HandleReportRequest(
+    val action: String,
+    val note: String = "",
+    val days: Int? = null,
+)
