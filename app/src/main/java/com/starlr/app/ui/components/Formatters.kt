@@ -102,9 +102,9 @@ fun mediaUrl(raw: String?, baseUrl: String): String? {
 fun avatarUrl(raw: String?, uid: Long?, baseUrl: String): String? =
     mediaUrl(raw, baseUrl) ?: uid?.let { "${baseUrl.trimEnd('/')}/api/avatars/$it" }
 
-/** 角色文案 */
-fun roleLabel(role: String?): String? = when (role) {
-    "admin" -> "站长"
+/** 角色文案：站长仅 uid 1（创始人），其余管理员显示「管理员」 */
+fun roleLabel(role: String?, uid: Long? = null): String? = when (role) {
+    "admin" -> if (uid == 1L) "站长" else "管理员"
     "moderator" -> "版主"
     else -> null
 }

@@ -10,16 +10,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.outlined.Wallpaper
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +58,8 @@ import com.starlr.app.data.StarlrRepository
 import com.starlr.app.data.UpdateMeRequest
 import com.starlr.app.data.User
 import com.starlr.app.ui.components.Avatar
+import com.starlr.app.ui.components.UploadingIndicator
+import com.starlr.app.ui.components.rememberImageUploadLauncher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -72,6 +80,25 @@ class SettingsViewModel(private val repo: StarlrRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             _state.value = _state.value.copy(me = repo.loadCurrentUser())
+        }
+    }
+
+    /** 上传后把新 url 写入用户资料（头像由后端自动更新 avatar_url；背景需 PATCH /api/me） */
+    fun refreshMe() {
+        viewModelScope.launch { _state.value = _state.value.copy(me = repo.loadCurrentUser()) }
+    }
+
+    fun updateBackground(url: String?) {
+        if (_state.value.saving) return
+        _state.value = _state.value.copy(saving = true, message = null, error = null)
+        viewModelScope.launch {
+            runCatching { repo.api.updateMe(UpdateMeRequest(backgroundUrl = url)) }
+                .onSuccess { res ->
+                    _state.value = _state.value.copy(saving = false, me = res.user)
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(saving = false, error = StarlrRepository.toApiError(e).message)
+                }
         }
     }
 
@@ -151,6 +178,23 @@ fun SettingsScreen(
     var currentPassword by rememberSaveable { mutableStateOf("") }
     var newPassword by rememberSaveable { mutableStateOf("") }
     var serverUrl by rememberSaveable { mutableStateOf(container.serverConfig.current) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
+
+    // 头像上传：成功后刷新 me（后端自动更新 avatar_url）
+    val pickAvatar = rememberImageUploadLauncher(
+        repo = container.repository,
+        purpose = "avatar",
+        maxSizeMB = 2,
+        onError = { uploadError = it },
+    ) { _ -> vm.refreshMe() }
+
+    // 背景图上传：成功后 PATCH /api/me 写入 backgroundUrl
+    val pickBackground = rememberImageUploadLauncher(
+        repo = container.repository,
+        purpose = "background",
+        maxSizeMB = 5,
+        onError = { uploadError = it },
+    ) { url -> vm.updateBackground(url) }
 
     // 首次载入时预填
     LaunchedEffect(state.me) {
@@ -210,16 +254,47 @@ fun SettingsScreen(
                     color = androidx.compose.ui.graphics.Color.White,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(12.dp),
+                        .padding(start = 56.dp, end = 12.dp, bottom = 12.dp),
                 )
+                // 换背景图
+                IconButton(
+                    onClick = { pickBackground() },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .background(Color.Black.copy(alpha = 0.45f), androidx.compose.foundation.shape.CircleShape),
+                ) {
+                    Icon(
+                        Icons.Outlined.Wallpaper,
+                        contentDescription = "更换主页背景图",
+                        tint = Color.White,
+                    )
+                }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Avatar(
-                    url = com.starlr.app.ui.components.mediaUrl(state.me?.avatarUrl ?: session.user?.avatarUrl, com.starlr.app.ui.BuildConfigAware.baseUrl),
-                    name = session.user?.username ?: "用户",
-                    size = 56.dp,
-                )
+                Box {
+                    Avatar(
+                        url = com.starlr.app.ui.components.mediaUrl(state.me?.avatarUrl ?: session.user?.avatarUrl, com.starlr.app.ui.BuildConfigAware.baseUrl),
+                        name = session.user?.username ?: "用户",
+                        size = 56.dp,
+                    )
+                    // 换头像（右上角小相机）
+                    IconButton(
+                        onClick = { pickAvatar() },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .size(24.dp)
+                            .background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape),
+                    ) {
+                        Icon(
+                            Icons.Filled.AddAPhoto,
+                            contentDescription = "更换头像",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                }
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text(
@@ -237,6 +312,10 @@ fun SettingsScreen(
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            uploadError?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+            }
 
             // 资料
             Text("资料", fontWeight = FontWeight.Bold, fontSize = 15.sp)

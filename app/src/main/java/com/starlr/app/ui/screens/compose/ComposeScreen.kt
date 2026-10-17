@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +24,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -52,6 +54,9 @@ import com.starlr.app.data.Category
 import com.starlr.app.data.CreatePostRequest
 import com.starlr.app.data.CreateReplyRequest
 import com.starlr.app.data.StarlrRepository
+import com.starlr.app.ui.BuildConfigAware
+import com.starlr.app.ui.components.UploadingIndicator
+import com.starlr.app.ui.components.rememberImageUploadLauncher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -153,6 +158,18 @@ fun ComposeScreen(
     var tags by rememberSaveable { mutableStateOf(listOf<String>()) }
     var categorySlug by rememberSaveable { mutableStateOf<String?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
+    var uploadingImage by remember { mutableStateOf(false) }
+    var uploadError by remember { mutableStateOf<String?>(null) }
+
+    // 选图上传：成功后在正文末尾插入 Markdown 图片（与 web 端一致）
+    val pickImage = rememberImageUploadLauncher(
+        repo = container.repository,
+        purpose = if (replyTo != null) "reply" else "post",
+        maxSizeMB = 5,
+        onError = { uploadError = it },
+    ) { url ->
+        content = content.trimEnd() + "\n\n![图片](${BuildConfigAware.baseUrl}$url)\n"
+    }
 
     LaunchedEffect(state.donePostId) {
         state.donePostId?.let { onDone(it) }
@@ -245,6 +262,25 @@ fun ComposeScreen(
                         }
                     }
                 }
+            }
+
+            // 图片上传（发帖/回复均可）
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { pickImage() }, enabled = !state.submitting) {
+                    Icon(
+                        Icons.Outlined.AddPhotoAlternate,
+                        contentDescription = "插入图片",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Text(
+                    "插入图片（≤5MB，JPG/PNG/GIF/WEBP）",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            uploadError?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             }
 
             // 正文

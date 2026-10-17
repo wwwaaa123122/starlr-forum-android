@@ -64,8 +64,8 @@ fun ActionCount(
 
 /** 角色徽章：站长 / 版主 */
 @Composable
-fun RoleBadge(role: String?, modifier: Modifier = Modifier) {
-    val label = roleLabel(role) ?: return
+fun RoleBadge(role: String?, uid: Long? = null, modifier: Modifier = Modifier) {
+    val label = roleLabel(role, uid) ?: return
     val bg = if (role == "admin") MaterialTheme.colorScheme.primaryContainer else SlBoost.copy(alpha = 0.16f)
     val fg = if (role == "admin") MaterialTheme.colorScheme.primary else SlBoost
     Box(

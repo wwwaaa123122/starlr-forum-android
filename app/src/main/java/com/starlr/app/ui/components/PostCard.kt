@@ -80,7 +80,7 @@ fun PostCard(
                     )
                     if (post.authorRole == "admin" || post.authorRole == "moderator") {
                         Spacer(Modifier.width(6.dp))
-                        RoleBadge(post.authorRole)
+                        RoleBadge(post.authorRole, post.authorUid)
                     }
                     Text(
                         text = " · ${relativeTime(post.createdAt)}",

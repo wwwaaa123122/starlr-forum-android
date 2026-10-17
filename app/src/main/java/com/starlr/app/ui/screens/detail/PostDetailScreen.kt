@@ -268,7 +268,7 @@ fun PostDetailScreen(
                                         modifier = Modifier.clickable { onOpenUser(post.authorName) },
                                     )
                                     Spacer(Modifier.width(6.dp))
-                                    RoleBadge(post.authorRole)
+                                    RoleBadge(post.authorRole, post.authorUid)
                                 }
                                 Text(
                                     "· ${relativeTime(post.createdAt)}",
@@ -479,7 +479,7 @@ private fun ReplyRow(
             url = com.starlr.app.ui.components.avatarUrl(
                 reply.authorAvatar, reply.authorUid, com.starlr.app.ui.BuildConfigAware.baseUrl,
             ),
-            name = reply.authorName.ifBlank { "星" },
+            name = (reply.authorNickname?.takeIf { it.isNotBlank() } ?: reply.authorName).ifBlank { "星" },
             size = if (indented) 28.dp else 36.dp,
             modifier = Modifier.clickable { onOpenUser(reply.authorName) },
         )
@@ -487,13 +487,13 @@ private fun ReplyRow(
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    reply.authorName.ifBlank { "匿名" },
+                    (reply.authorNickname?.takeIf { it.isNotBlank() } ?: reply.authorName).ifBlank { "匿名" },
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     modifier = Modifier.clickable { onOpenUser(reply.authorName) },
                 )
                 Spacer(Modifier.width(6.dp))
-                RoleBadge(reply.authorRole)
+                RoleBadge(reply.authorRole, reply.authorUid)
                 reply.replyToUserName?.let {
                     Spacer(Modifier.width(6.dp))
                     Text("回复 @$it", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

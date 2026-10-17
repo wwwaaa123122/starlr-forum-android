@@ -7,7 +7,10 @@ import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.HttpException
@@ -135,6 +138,25 @@ class StarlrRepository(
         val access = res.accessToken ?: throw ApiError(401, "NO_TOKEN", "登录响应缺少 Token")
         val refresh = res.refreshToken ?: throw ApiError(401, "NO_TOKEN", "登录响应缺少 Token")
         tokenStore.save(access, refresh)
+    }
+
+    /**
+     * 图片上传（multipart）：bytes + mimeType 来自本地文件。
+     * purpose：avatar（≤2MB，返回 /api/avatars/:uid）| post | reply | background。
+     * 返回 url（相对路径，展示时经 mediaUrl 拼接 baseUrl）。
+     */
+    suspend fun uploadImage(bytes: ByteArray, mimeType: String, purpose: String): String {
+        val ext = when (mimeType) {
+            "image/jpeg" -> "jpg"; "image/png" -> "png"; "image/gif" -> "gif"; "image/webp" -> "webp"
+            else -> throw ApiError(400, "UNSUPPORTED_TYPE", "仅支持 JPG/PNG/GIF/WEBP 图片")
+        }
+        val filePart = MultipartBody.Part.createFormData(
+            "file", "image.$ext",
+            bytes.toRequestBody(mimeType.toMediaTypeOrNull()),
+        )
+        val purposePart = purpose.toRequestBody("text/plain".toMediaTypeOrNull())
+        val res = api.uploadImage(filePart, purposePart)
+        return res.url ?: throw ApiError(500, "NO_URL", "上传响应缺少图片地址")
     }
 
     /** 会话过期（由 Authenticator 回调） */
