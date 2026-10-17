@@ -273,8 +273,20 @@ fun PostDetailScreen(
     LaunchedEffect(postId) { vm.bind(postId) }
 
     val topLevel = state.replies.filter { it.parentReplyId.isNullOrBlank() }
+    // 回复只展示两层：挂在子回复下的深层回复提升到所在顶层楼，避免嵌套丢失
     val childrenOf: (String) -> List<Reply> = { parentId ->
-        state.replies.filter { it.parentReplyId == parentId }
+        val topIds = topLevel.mapTo(HashSet(), { it.id })
+        state.replies.filter { reply ->
+            if (reply.parentReplyId.isNullOrBlank()) return@filter false
+            var cur = reply
+            var hops = 0
+            while (!cur.parentReplyId.isNullOrBlank() && hops < 20) {
+                hops++
+                if (cur.parentReplyId == parentId) return@filter true
+                cur = state.replies.firstOrNull { it.id == cur.parentReplyId } ?: return@filter cur.parentReplyId == parentId
+            }
+            false
+        }
     }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
