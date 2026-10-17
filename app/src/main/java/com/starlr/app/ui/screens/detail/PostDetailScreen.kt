@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -44,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -399,11 +401,38 @@ fun PostDetailScreen(
         // 底部回复输入栏
         if (loggedIn) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            // 回复对象标签：可点击 × 取消定向回复
+            state.replyTo?.let { target ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "回复 @${(target.authorNickname?.takeIf { it.isNotBlank() } ?: target.authorName).ifBlank { "匿名" }}",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "取消",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable { vm.setReplyTo(null) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    )
+                }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
                     .imePadding()
+                    .navigationBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -412,7 +441,7 @@ fun PostDetailScreen(
                     onValueChange = { draft = it },
                     placeholder = {
                         Text(
-                            state.replyTo?.let { "回复 @${it.authorName}" } ?: "写下你的回复…",
+                            "写下你的回复…",
                             fontSize = 14.sp,
                         )
                     },
