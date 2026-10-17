@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.ChatBubble
@@ -258,6 +259,7 @@ fun PostDetailScreen(
     onLogin: () -> Unit,
     onReply: (String) -> Unit,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val vm: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(container))
     val state by vm.state.collectAsState()
     var draft by remember { mutableStateOf("") }
@@ -285,6 +287,20 @@ fun PostDetailScreen(
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
             }
             Text("帖子", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            state.post?.let { p ->
+                IconButton(onClick = {
+                    val ctx = context
+                    val url = com.starlr.app.ui.BuildConfigAware.baseUrl.trimEnd('/') + "/post/" + p.id
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, p.title + " " + url)
+                    }
+                    ctx.startActivity(android.content.Intent.createChooser(send, "分享帖子"))
+                }) {
+                    Icon(Icons.Outlined.Share, contentDescription = "分享")
+                }
+            }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
