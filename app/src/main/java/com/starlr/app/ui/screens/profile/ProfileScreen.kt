@@ -70,10 +70,13 @@ data class ProfileState(
     val user: User? = null,
     val posts: List<Post> = emptyList(),
     val replies: List<Reply> = emptyList(),
+    val likes: List<Post> = emptyList(),
     val postPage: Int = 1,
     val replyPage: Int = 1,
+    val likePage: Int = 1,
     val postHasMore: Boolean = false,
     val replyHasMore: Boolean = false,
+    val likeHasMore: Boolean = false,
     val error: String? = null,
 )
 
@@ -130,6 +133,19 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
                         )
                     }
                 }
+                launch {
+                    val me = repo.session.value.user
+                    val isMe = me?.username == name
+                    if (isMe || _state.value.user?.likesPublic == true) {
+                        runCatching { repo.api.getUserLikes(name, page = 1, pageSize = 20) }.onSuccess { res ->
+                            _state.value = _state.value.copy(
+                                likes = res.posts,
+                                likePage = 1,
+                                likeHasMore = res.pagination.hasMore,
+                            )
+                        }
+                    }
+                }
             }
             _state.value = _state.value.copy(loading = false)
         }
@@ -141,8 +157,10 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
         val s = _state.value
         if (s.loading) return
         val isPosts = tab == 0
+        val isLikes = tab == 2
         if (isPosts && !s.postHasMore) return
-        if (!isPosts && !s.replyHasMore) return
+        if (!isPosts && isLikes && !s.likeHasMore) return
+        if (!isPosts && !isLikes && !s.replyHasMore) return
         _state.value = s.copy(loading = true)
 
         viewModelScope.launch {
@@ -154,6 +172,15 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
                         posts = _state.value.posts + res.posts.filterNot { it.id in existing },
                         postPage = s.postPage + 1,
                         postHasMore = res.pagination.hasMore,
+                        loading = false,
+                    )
+                } else if (isLikes) {
+                    val res = repo.api.getUserLikes(name, page = s.likePage + 1, pageSize = 20)
+                    val existing = _state.value.likes.map { it.id }.toSet()
+                    _state.value = _state.value.copy(
+                        likes = _state.value.likes + res.posts.filterNot { it.id in existing },
+                        likePage = s.likePage + 1,
+                        likeHasMore = res.pagination.hasMore,
                         loading = false,
                     )
                 } else {
@@ -349,7 +376,12 @@ fun ProfileScreen(
                         )
                     },
                 ) {
-                    listOf("帖子", "回复").forEachIndexed { i, label ->
+                    val tabs = buildList {
+                        add("帖子"); add("回复")
+                        val isMe = username == null || session.user?.username == user?.username
+                        if (isMe || user?.likesPublic == true) add("喜欢")
+                    }
+                    tabs.forEachIndexed { i, label ->
                         Tab(
                             selected = tab == i,
                             onClick = { tab = i },
@@ -386,6 +418,32 @@ fun ProfileScreen(
                         TextButton(onClick = { vm.loadMore(0) }, modifier = Modifier.fillMaxWidth()) { Text("加载更多") }
                     }
                 }
+            } else if (tab == 2) {
+                if (state.loading && state.likes.isEmpty()) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                        ) { CircularProgressIndicator() }
+                    }
+                }
+                items(state.likes, key = { "l_${it.id}" }) { post ->
+                    PostCard(
+                        post = post,
+                        baseUrl = com.starlr.app.ui.BuildConfigAware.baseUrl,
+                        onOpen = { onOpenPost(post.id) },
+                        onLike = null,
+                        onFavorite = null,
+                        onAuthorClick = { onOpenUser(post.authorName) },
+                        showCategory = true,
+                    )
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
+                }
+                if (state.likeHasMore) {
+                    item {
+                        TextButton(onClick = { vm.loadMore(2) }, modifier = Modifier.fillMaxWidth()) { Text("加载更多") }
+                    }
+                }
             } else {
                 if (state.loading && state.replies.isEmpty()) {
                     item {
@@ -396,7 +454,7 @@ fun ProfileScreen(
                     }
                 }
                 items(state.replies, key = { "r_${it.id}" }) { reply ->
-                    ReplyRow(reply = reply, onOpenPost = onOpenPost)
+                    ReplyRow(reply = reply, onOpenPost = onOpenPost, onOpenUser = onOpenUser)
                     Box(Modifier.fillMaxWidth().height(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 }
                 if (state.replyHasMore) {
@@ -435,13 +493,33 @@ fun ProfileScreen(
 
 /** 用户主页的回复行（关联所属帖子，点击跳详情） */
 @Composable
-private fun ReplyRow(reply: Reply, onOpenPost: (String) -> Unit) {
+private fun ReplyRow(reply: Reply, onOpenPost: (String) -> Unit, onOpenUser: (String) -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = !reply.postId.isNullOrBlank()) { reply.postId?.let(onOpenPost) }
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
+        // 作者行：头像 + 昵称（昵称优先，空则用户名）
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Avatar(
+                url = com.starlr.app.ui.components.avatarUrl(
+                    reply.authorAvatar,
+                    reply.authorUid,
+                    com.starlr.app.ui.BuildConfigAware.baseUrl,
+                ),
+                name = (reply.authorNickname?.takeIf { it.isNotBlank() } ?: reply.authorName).ifBlank { "用户" },
+                size = 28.dp,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                (reply.authorNickname?.takeIf { it.isNotBlank() } ?: reply.authorName).ifBlank { reply.authorName },
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(enabled = reply.authorName.isNotBlank()) { onOpenUser(reply.authorName) },
+            )
+        }
+        Spacer(Modifier.height(4.dp))
         reply.postTitle?.let {
             Text(
                 "回复：$it",

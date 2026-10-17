@@ -62,6 +62,11 @@ app/src/main/java/com/starlr/app/
   `npx wrangler kv key put "config:app" '<json>' --remote --namespace-id=10623b6e6ae9438299ff5b86a476333c`
 - 弹窗标题与说明文字全部来自接口（versionName/notes），应用端不硬编码说明性文案。
 
+## 红线：不得删减既有功能
+
+- **没有得到用户明确许可，不得删减、隐藏或简化任何既有功能**（UI 入口、操作、列表、tab 等都算）。改动时如果发现某功能似乎「多余」或「坏了」，先向用户确认，不得顺手移除。
+- 重构/迁移组件时必须保持原功能全集对等（例：Profile 回复行必须有作者昵称与头像；帖子必须有点赞/收藏入口）。每次改动后对照改动前的功能清单自查一遍。
+
 ## 已知坑
 
 - Kotlin DSL 里读 properties：文件顶部 `import java.util.Properties`。

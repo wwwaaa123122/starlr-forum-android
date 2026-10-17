@@ -106,6 +106,7 @@ data class User(
     val backgroundUrl: String? = null,
     val bio: String? = null,
     val role: String? = null,
+    val likesPublic: Boolean? = null,
     val postCount: Int = 0,
     val replyCount: Int = 0,
     val createdAt: String? = null,

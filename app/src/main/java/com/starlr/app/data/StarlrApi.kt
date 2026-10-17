@@ -134,6 +134,13 @@ interface StarlrApi {
         @Query("pageSize") pageSize: Int = 20,
     ): PostListResponse
 
+    @GET("api/users/{username}/likes")
+    suspend fun getUserLikes(
+        @Path("username") username: String,
+        @Query("page") page: Int = 1,
+        @Query("pageSize") pageSize: Int = 20,
+    ): PostListResponse
+
     @GET("api/users/{username}/replies")
     suspend fun getUserReplies(
         @Path("username") username: String,
