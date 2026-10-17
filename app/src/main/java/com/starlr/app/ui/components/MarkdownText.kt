@@ -72,7 +72,7 @@ private fun parseMarkdown(src: String): List<Line> {
             }
             trimmed.startsWith("> ") || trimmed == ">" -> lines.add(Line(Line.Type.QUOTE, trimmed.removePrefix("> ")))
             // 独立成行的图片：![alt](url)
-            imageRegex.matches(trimmed) -> lines.add(Line(Line.Type.IMAGE, trimmed, 0, imageRegex.find(trimmed)!!.groupValues[2]))
+            imageRegex.matches(trimmed) -> lines.add(Line(Line.Type.IMAGE, trimmed, 0, imageRegex.find(trimmed)!!.groupValues[1]))
             Regex("^[-*+]\\s+.*").matches(trimmed) -> lines.add(Line(Line.Type.LIST_ITEM, trimmed.drop(2).trim()))
             Regex("^\\d+\\.\\s+.*").matches(trimmed) -> lines.add(Line(Line.Type.LIST_ITEM, trimmed.substringAfter(". ").trim()))
             else -> lines.add(Line(Line.Type.PARA, trimmed))
