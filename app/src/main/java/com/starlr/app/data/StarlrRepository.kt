@@ -186,7 +186,10 @@ class StarlrRepository(
                             json.decodeFromString(ApiErrorBody.serializer(), it).error
                         }.getOrNull()
                     }
-                    if (parsed == null && body != null && !body.trimStart().startsWith("{")) {
+                    // 401 兜底文案：无论解析成败，登录凭据类失败一律给出明确提示
+                    if (e.code() == 401 && parsed?.code == "INVALID_CREDENTIALS") {
+                        ApiError(401, "INVALID_CREDENTIALS", "用户名（邮箱）或密码错误")
+                    } else if (parsed == null && body != null && !body.trimStart().startsWith("{")) {
                         ApiError(e.code(), "HTTP_${e.code()}", "服务器返回异常响应（${e.code()}），若持续出现请检查服务器地址")
                     } else {
                         ApiError(e.code(), parsed?.code ?: "HTTP_${e.code()}", parsed?.message ?: "请求失败（${e.code()}）")
