@@ -149,6 +149,14 @@ interface StarlrApi {
     @PATCH("api/me/password")
     suspend fun changePassword(@Body body: ChangePasswordRequest)
 
+    /** 编辑帖子（作者或版主）：PATCH api/posts/{id} */
+    @PATCH("api/posts/{id}")
+    suspend fun updatePost(@Path("id") id: String, @Body body: UpdatePostRequest)
+
+    /** 编辑回复：PATCH api/replies/{id} */
+    @PATCH("api/replies/{id}")
+    suspend fun updateReply(@Path("id") id: String, @Body body: UpdateReplyRequest)
+
     /** 图片上传：purpose=avatar（头像）| post | reply | background（主页背景） */
     @Multipart
     @POST("api/upload")

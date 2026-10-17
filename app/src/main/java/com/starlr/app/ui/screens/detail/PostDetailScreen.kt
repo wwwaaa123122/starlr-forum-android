@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,6 +60,8 @@ import com.starlr.app.AppContainer
 import com.starlr.app.data.CreateReplyRequest
 import com.starlr.app.data.Post
 import com.starlr.app.data.Reply
+import com.starlr.app.data.UpdatePostRequest
+import com.starlr.app.data.UpdateReplyRequest
 import com.starlr.app.data.StarlrRepository
 import com.starlr.app.ui.components.ActionCount
 import com.starlr.app.ui.components.Avatar
@@ -179,6 +182,32 @@ class PostDetailViewModel(private val repo: StarlrRepository) : ViewModel() {
         }
     }
 
+    /** 编辑帖子（标题/正文）成功后刷新详情 */
+    fun updatePost(title: String, content: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repo.api.updatePost(postId, UpdatePostRequest(title = title.trim(), content = content.trim()))
+                refresh()
+                onDone(null)
+            } catch (e: Exception) {
+                onDone(StarlrRepository.toApiError(e).message)
+            }
+        }
+    }
+
+    /** 编辑回复成功后刷新回复列表 */
+    fun updateReply(replyId: String, content: String, onDone: (String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                repo.api.updateReply(replyId, UpdateReplyRequest(content.trim()))
+                refresh()
+                onDone(null)
+            } catch (e: Exception) {
+                onDone(StarlrRepository.toApiError(e).message)
+            }
+        }
+    }
+
     fun setReplyTo(reply: Reply?) {
         _state.value = _state.value.copy(replyTo = reply)
     }
@@ -224,6 +253,10 @@ fun PostDetailScreen(
     val vm: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(container))
     val state by vm.state.collectAsState()
     var draft by remember { mutableStateOf("") }
+    var editPostOpen by remember { mutableStateOf(false) }
+    var editReplyTarget by remember { mutableStateOf<Reply?>(null) }
+    val session by container.repository.session.collectAsState()
+    val myUserId = session.user?.id
 
     LaunchedEffect(postId) { vm.bind(postId) }
 
@@ -271,6 +304,18 @@ fun PostDetailScreen(
                                     )
                                     Spacer(Modifier.width(6.dp))
                                     RoleBadge(post.authorRole, post.authorUid)
+                                    if (post.isAuthor || post.canModerate) {
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            "编辑",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(999.dp))
+                                                .clickable { editPostOpen = true }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                        )
+                                    }
                                 }
                                 Text(
                                     "· ${relativeTime(post.createdAt)}",
@@ -318,6 +363,13 @@ fun PostDetailScreen(
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (post.editedAt != null) {
+                                Text(
+                                    "已修改",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         Spacer(Modifier.height(6.dp))
                         Row(
@@ -369,6 +421,7 @@ fun PostDetailScreen(
                         onOpenUser = onOpenUser,
                         onLike = { vm.likeReply(it) },
                         onReplyTo = { vm.setReplyTo(it); if (!loggedIn) onLogin() },
+                        onEdit = if (reply.authorId == myUserId || state.post?.canModerate == true) ({ editReplyTarget = it }) else null,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
@@ -471,8 +524,39 @@ fun PostDetailScreen(
                 }
             }
         }
+
+    // 编辑帖子对话框
+    if (editPostOpen) {
+        val post = state.post
+        EditDialog(
+            title = "编辑帖子",
+            initialTitle = post?.title.orEmpty(),
+            initialContent = post?.content.orEmpty(),
+            showTitle = true,
+            onDismiss = { editPostOpen = false },
+            onSubmit = { t, c ->
+                editPostOpen = false
+                vm.updatePost(t, c) { /* 错误经 refresh 后 state.error 显示 */ }
+            },
+        )
+    }
+    // 编辑回复对话框
+    editReplyTarget?.let { target ->
+        EditDialog(
+            title = "编辑回复",
+            initialTitle = "",
+            initialContent = target.content,
+            showTitle = false,
+            onDismiss = { editReplyTarget = null },
+            onSubmit = { _, c ->
+                editReplyTarget = null
+                vm.updateReply(target.id, c) { }
+            },
+        )
+    }
     }
 }
+
 
 /** 单条回复 + 楼中楼子回复（缩进一档） */
 @Composable
@@ -482,9 +566,10 @@ private fun ReplyBlock(
     onOpenUser: (String) -> Unit,
     onLike: (Reply) -> Unit,
     onReplyTo: (Reply) -> Unit,
+    onEdit: ((Reply) -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
-        ReplyRow(reply = reply, onOpenUser = onOpenUser, onLike = onLike, onReplyTo = onReplyTo, indented = false)
+        ReplyRow(reply = reply, onOpenUser = onOpenUser, onLike = onLike, onReplyTo = onReplyTo, onEdit = onEdit, indented = false)
         children.forEach { child ->
             Spacer(Modifier.height(8.dp))
             Box(Modifier.padding(start = 30.dp)) {
@@ -500,7 +585,8 @@ private fun ReplyRow(
     onOpenUser: (String) -> Unit,
     onLike: (Reply) -> Unit,
     onReplyTo: (Reply) -> Unit,
-    indented: Boolean,
+    onEdit: ((Reply) -> Unit)? = null,
+    indented: Boolean = false,
 ) {
     val liked = reply.liked?.value == true
     Row(Modifier.fillMaxWidth()) {
@@ -523,6 +609,22 @@ private fun ReplyRow(
                 )
                 Spacer(Modifier.width(6.dp))
                 RoleBadge(reply.authorRole, reply.authorUid)
+                onEdit?.let { cb ->
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "编辑",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable { cb(reply) }
+                            .padding(horizontal = 4.dp),
+                    )
+                }
+                if (reply.editedAt != null) {
+                    Spacer(Modifier.width(6.dp))
+                    Text("已修改", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 reply.replyToUserName?.let {
                     Spacer(Modifier.width(6.dp))
                     Text("回复 @$it", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -555,4 +657,58 @@ private fun ReplyRow(
             }
         }
     }
+}
+
+/** 通用编辑对话框：标题（可选）+ 正文 */
+@Composable
+private fun EditDialog(
+    title: String,
+    initialTitle: String,
+    initialContent: String,
+    showTitle: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (String, String) -> Unit,
+) {
+    var titleText by remember { mutableStateOf(initialTitle) }
+    var contentText by remember { mutableStateOf(initialContent) }
+    var saving by remember { mutableStateOf(false) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (showTitle) {
+                    OutlinedTextField(
+                        value = titleText,
+                        onValueChange = { titleText = it },
+                        label = { Text("标题") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                }
+                OutlinedTextField(
+                    value = contentText,
+                    onValueChange = { contentText = it },
+                    label = { Text("正文") },
+                    minLines = 4,
+                    maxLines = 10,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    saving = true
+                    onSubmit(titleText, contentText)
+                },
+                enabled = !saving && contentText.isNotBlank() && (!showTitle || titleText.isNotBlank()),
+            ) { Text("保存") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !saving) { Text("取消") }
+        },
+    )
 }

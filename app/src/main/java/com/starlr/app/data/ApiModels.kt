@@ -171,6 +171,16 @@ data class CreatePostRequest(
 data class CreateReplyRequest(val content: String, val parentReplyId: String? = null)
 
 @Serializable
+data class UpdatePostRequest(
+    val title: String? = null,
+    val content: String? = null,
+    val tags: List<String>? = null,
+)
+
+@Serializable
+data class UpdateReplyRequest(val content: String)
+
+@Serializable
 data class UpdateMeRequest(val nickname: String? = null, val bio: String? = null, val backgroundUrl: String? = null)
 
 @Serializable
