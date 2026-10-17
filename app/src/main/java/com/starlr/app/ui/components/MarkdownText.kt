@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 
@@ -35,9 +37,11 @@ import androidx.compose.ui.text.style.TextOverflow
  * 安全性：纯文本渲染（AnnotatedString），不解析 HTML，天然免疫 XSS。
  */
 
-private data class Line(val type: Type, val text: String, val level: Int = 0) {
-    enum class Type { HEADING, PARA, CODE, QUOTE, LIST_ITEM, HR }
+private data class Line(val type: Type, val text: String, val level: Int = 0, val imageUrl: String? = null) {
+    enum class Type { HEADING, PARA, CODE, QUOTE, LIST_ITEM, HR, IMAGE }
 }
+
+private val imageRegex = Regex("^!\\[[^\\]]*\\]\\(([^\\s)]+)(?:\\s+\"[^\"]*\")?\\)$")
 
 private fun parseMarkdown(src: String): List<Line> {
     val lines = mutableListOf<Line>()
@@ -67,6 +71,8 @@ private fun parseMarkdown(src: String): List<Line> {
                 lines.add(Line(Line.Type.HEADING, trimmed.dropWhile { it == '#' }.trim(), level))
             }
             trimmed.startsWith("> ") || trimmed == ">" -> lines.add(Line(Line.Type.QUOTE, trimmed.removePrefix("> ")))
+            // 独立成行的图片：![alt](url)
+            imageRegex.matches(trimmed) -> lines.add(Line(Line.Type.IMAGE, trimmed, 0, imageRegex.find(trimmed)!!.groupValues[2]))
             Regex("^[-*+]\\s+.*").matches(trimmed) -> lines.add(Line(Line.Type.LIST_ITEM, trimmed.drop(2).trim()))
             Regex("^\\d+\\.\\s+.*").matches(trimmed) -> lines.add(Line(Line.Type.LIST_ITEM, trimmed.substringAfter(". ").trim()))
             else -> lines.add(Line(Line.Type.PARA, trimmed))
@@ -135,6 +141,20 @@ fun MarkdownText(content: String, compact: Boolean = false, maxLines: Int = Int.
                         fontSize = size,
                         fontWeight = FontWeight.Black,
                         lineHeight = size * 1.4f,
+                    )
+                    rendered += 1
+                }
+                Line.Type.IMAGE -> {
+                    val raw = line.imageUrl.orEmpty()
+                    val full = if (raw.startsWith("http")) raw
+                    else com.starlr.app.ui.BuildConfigAware.baseUrl.trimEnd('/') + (if (raw.startsWith("/")) raw else "/$raw")
+                    coil.compose.AsyncImage(
+                        model = full,
+                        contentDescription = "帖子图片",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                     )
                     rendered += 1
                 }

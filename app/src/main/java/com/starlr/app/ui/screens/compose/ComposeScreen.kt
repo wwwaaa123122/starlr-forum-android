@@ -168,7 +168,7 @@ fun ComposeScreen(
         maxSizeMB = 5,
         onError = { uploadError = it },
     ) { url ->
-        content = content.trimEnd() + "\n\n![图片](${BuildConfigAware.baseUrl}$url)\n"
+        content = content.trimEnd() + "\n\n![图片]($url)\n"  // 与 web 端一致：相对路径，渲染时拼 baseUrl
     }
 
     LaunchedEffect(state.donePostId) {
