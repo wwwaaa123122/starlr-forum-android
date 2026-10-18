@@ -48,7 +48,7 @@ class ServerRewriteInterceptor(private val server: ServerConfig) : Interceptor {
 
 /** 仓库层：Retrofit API + 会话状态管理 */
 class StarlrRepository(
-    private val serverConfig: ServerConfig,
+    val serverConfig: ServerConfig,
     private val tokenStore: TokenStore,
     onSessionExpired: () -> Unit,
 ) {
@@ -76,6 +76,10 @@ class StarlrRepository(
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(StarlrApi::class.java)
+
+    /** 浏览器登录桥接页源/URL：跟随当前配置的服务器地址（自部署无需改代码） */
+    val appSsoOrigin: String get() = ServerConfig.appSsoOrigin(serverConfig.current)
+    val appAuthUrl: String get() = ServerConfig.appAuthUrl(serverConfig.current)
 
     private val _session = MutableStateFlow(Session(tokenStore.hasSession))
     val session: StateFlow<Session> = _session
@@ -122,7 +126,7 @@ class StarlrRepository(
 
     /** 浏览器 SSO：用一次性 ticket 兑换当前服务器的会话（deep link 回来后调用） */
     suspend fun exchangeSiteTicket(ticket: String, challenge: String): User {
-        val res = api.redeemSiteTicket(SiteTicketRedeemRequest(ticket, challenge, APP_SSO_ORIGIN))
+        val res = api.redeemSiteTicket(SiteTicketRedeemRequest(ticket, challenge, appSsoOrigin))
         applyTokens(res)
         val user = api.me().user
         _session.value = Session(true, user, 0)
@@ -169,9 +173,12 @@ class StarlrRepository(
     }
 
     companion object {
-        /** 浏览器登录桥接页所在源（与 site-login 白名单一致） */
-        const val APP_SSO_ORIGIN = "https://x.182030.xyz"
-        const val APP_AUTH_URL = "https://x.182030.xyz/app-auth"
+        /** 兜底桥接页（BuildConfig 默认服务器）；实际应优先用实例属性 appSsoOrigin/appAuthUrl（跟随用户配置的服务器地址） */
+        val APP_SSO_ORIGIN_FALLBACK = appSsoOrigin(com.starlr.app.BuildConfig.API_BASE_URL)
+        val APP_AUTH_URL_FALLBACK = appAuthUrl(com.starlr.app.BuildConfig.API_BASE_URL)
+
+        fun appSsoOrigin(baseUrl: String): String = ServerConfig.appSsoOrigin(baseUrl)
+        fun appAuthUrl(baseUrl: String): String = ServerConfig.appAuthUrl(baseUrl)
 
         /** 把 retrofit HttpException / IOException / 其它 Throwable 归一化为 ApiError，保留具体原因 */
         fun toApiError(e: Throwable): ApiError {

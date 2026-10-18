@@ -36,5 +36,19 @@ class ServerConfig(private val prefs: android.content.SharedPreferences) {
     companion object {
         val DEFAULT_URL: String = com.starlr.app.BuildConfig.API_BASE_URL
         private const val KEY_SERVER = "starlr.server"
+
+        /**
+         * 由 API 基址推导浏览器登录桥接页地址（app-auth）。
+         * 自部署时 API 基址即站点根，桥接页部署在同源 /app-auth 路径，
+         * 不再依赖硬编码的独立域名。
+         */
+        fun appAuthUrl(baseUrl: String): String {
+            val root = baseUrl.trimEnd('/')
+            return "$root/app-auth"
+        }
+
+        fun appSsoOrigin(baseUrl: String): String {
+            return baseUrl.trimEnd('/')
+        }
     }
 }

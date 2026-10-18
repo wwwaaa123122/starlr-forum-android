@@ -148,7 +148,7 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
                                     append(URLEncoder.encode(it, "UTF-8"))
                                 }
                             }
-                            StarlrRepository.APP_AUTH_URL + "?" + query
+                            repo.appAuthUrl + "?" + query
                         }
                         .getOrElse { e ->
                             if (StarlrRepository.toApiError(e).httpStatus == 404) null else throw StarlrRepository.toApiError(e)
@@ -162,7 +162,7 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
                     } else {
                         openAuthBrowser(
                             container.appContext,
-                            StarlrRepository.APP_AUTH_URL + if (mode == "register") "?mode=register" else "",
+                            repo.appAuthUrl + if (mode == "register") "?mode=register" else "",
                         )
                     }
                     _state.value = AuthUiState(
@@ -321,11 +321,11 @@ fun LoginScreen(
             buildAnnotatedString {
                 append(if (mode == "login") "登录即代表你同意 " else "注册即表示你同意 ")
                 withLink(
-                    LinkAnnotation.Url("https://forum.182030.xyz/terms", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
+                    LinkAnnotation.Url(com.starlr.app.data.StarlrRepository.appAuthUrl(container.repository.serverConfig.current).removeSuffix("/app-auth") + "/terms", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
                 ) { append("《用户协议》") }
                 append(" 和 ")
                 withLink(
-                    LinkAnnotation.Url("https://forum.182030.xyz/privacy", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
+                    LinkAnnotation.Url(com.starlr.app.data.StarlrRepository.appAuthUrl(container.repository.serverConfig.current).removeSuffix("/app-auth") + "/privacy", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
                 ) { append("《隐私政策》") }
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
