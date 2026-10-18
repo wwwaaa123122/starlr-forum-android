@@ -46,6 +46,8 @@ android {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_BASE_URL", "\"https://i.182030.xyz/\"")
+            // app-auth 桥接页基址（浏览器人机验证页所在站点）；自部署改成你自己的 Web 站点根
+            buildConfigField("String", "APP_AUTH_BASE_URL", "\"https://x.182030.xyz\"")
             if (keystoreProps.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
             }

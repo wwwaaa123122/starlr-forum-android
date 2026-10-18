@@ -73,3 +73,8 @@ app/src/main/java/com/starlr/app/
 - Compose 预览/重组相关 import 容易漏（`remember`、`mutableStateOf`），以 IDE 报错为准逐个补。
 - 后端 `/api/posts` 分页参数 `page`（从 1 开始）/`pageSize`；下拉刷新重置 page=1。
 - 模拟器连本地后端必须用 10.0.2.2，写 localhost 不通。
+
+## 服务器地址配置（自部署适配）
+- API 基址：`app/build.gradle.kts` 的 `buildConfigField("API_BASE_URL", ...)`（debug 指向 10.0.2.2:8787）。
+- app-auth 桥接页基址：`buildConfigField("APP_AUTH_BASE_URL", ...)`——浏览器人机验证页部署在 Web Worker 上，与 API 可能不同源；单域名自部署时改成站点根即可。
+- 登录桥接页 URL、SSO 源、用户协议/隐私政策链接全部经 `ServerConfig.appAuthUrl()/appSsoOrigin()` 运行时推导，**禁止在代码里新增硬编码域名**。

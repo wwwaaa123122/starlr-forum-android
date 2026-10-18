@@ -42,13 +42,19 @@ class ServerConfig(private val prefs: android.content.SharedPreferences) {
          * 自部署时 API 基址即站点根，桥接页部署在同源 /app-auth 路径，
          * 不再依赖硬编码的独立域名。
          */
+        /**
+         * app-auth 桥接页基址：独立于 API 基址（桥接页部署在 Web Worker 上），
+         * 自部署单套部署时把 BuildConfig.APP_AUTH_BASE_URL 改成自己的站点根即可。
+         */
+        val AUTH_BASE_URL: String = com.starlr.app.BuildConfig.APP_AUTH_BASE_URL
+
         fun appAuthUrl(baseUrl: String): String {
-            val root = baseUrl.trimEnd('/')
+            val root = (AUTH_BASE_URL.ifBlank { baseUrl }).trimEnd('/')
             return "$root/app-auth"
         }
 
         fun appSsoOrigin(baseUrl: String): String {
-            return baseUrl.trimEnd('/')
+            return (AUTH_BASE_URL.ifBlank { baseUrl }).trimEnd('/')
         }
     }
 }
