@@ -54,6 +54,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starlr.app.AppContainer
 import com.starlr.app.data.Post
 import com.starlr.app.data.ProfileCache
+import com.starlr.app.data.ProfileDiskCache
 import com.starlr.app.data.Reply
 import com.starlr.app.data.StarlrRepository
 import com.starlr.app.data.User
@@ -95,19 +96,22 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
         target = username
         val name = username ?: repo.session.value.user?.username
         if (name != null && _state.value.user == null) {
-            val cached = ProfileCache.get(repo.serverConfig.current, name, repo.session.value.user?.username)
-            if (cached != null) {
+            // 1) 进程内内存缓存（最快）；2) 持久化缓存（重启后第一次进页也秒开）
+            val hit = ProfileCache.get(repo.serverConfig.current, name, repo.session.value.user?.username)
+                ?.let { ProfileDiskCache.Snapshot(it.user, it.posts, it.replies, it.likes, it.postHasMore, it.replyHasMore, it.likeHasMore) }
+                ?: ProfileDiskCache.get(repo.appContext, repo, name)
+            if (hit != null) {
                 _state.value = _state.value.copy(
-                    user = cached.user,
-                    posts = cached.posts,
-                    replies = cached.replies,
-                    likes = cached.likes,
+                    user = hit.user,
+                    posts = hit.posts,
+                    replies = hit.replies,
+                    likes = hit.likes,
                     postPage = 1,
                     replyPage = 1,
                     likePage = 1,
-                    postHasMore = cached.postHasMore,
-                    replyHasMore = cached.replyHasMore,
-                    likeHasMore = cached.likeHasMore,
+                    postHasMore = hit.postHasMore,
+                    replyHasMore = hit.replyHasMore,
+                    likeHasMore = hit.likeHasMore,
                     loading = false,
                     error = null,
                 )
@@ -169,13 +173,25 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
                     }
                 }
             }
-            // 刷新成功：整包写入缓存（下次进页秒开）
+            // 刷新成功：整包写入两级缓存（下次进页/重启后秒开）
             val s = _state.value
             if (s.user != null && s.error == null) {
                 ProfileCache.put(
                     server = repo.serverConfig.current,
                     username = name,
                     currentAccount = repo.session.value.user?.username,
+                    user = s.user,
+                    posts = s.posts,
+                    replies = s.replies,
+                    likes = s.likes,
+                    postHasMore = s.postHasMore,
+                    replyHasMore = s.replyHasMore,
+                    likeHasMore = s.likeHasMore,
+                )
+                ProfileDiskCache.put(
+                    context = repo.appContext,
+                    repo = repo,
+                    username = name,
                     user = s.user,
                     posts = s.posts,
                     replies = s.replies,

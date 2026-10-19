@@ -1,5 +1,6 @@
 package com.starlr.app.data
 
+import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +49,7 @@ class ServerRewriteInterceptor(private val server: ServerConfig) : Interceptor {
 
 /** 仓库层：Retrofit API + 会话状态管理 */
 class StarlrRepository(
+    val appContext: Context,
     val serverConfig: ServerConfig,
     private val tokenStore: TokenStore,
     onSessionExpired: () -> Unit,
@@ -121,7 +123,8 @@ class StarlrRepository(
     suspend fun logout() {
         runCatching { api.logout(LogoutRequest(tokenStore.refreshToken)) }
         tokenStore.clear()
-        ProfileCache.clear() // 切换账号/登出：个人主页缓存整包清空
+        ProfileCache.clear() // 切换账号/登出：个人主页内存缓存整包清空
+        ProfileDiskCache.clear(appContext) // 持久化缓存同清
         _session.value = Session(false)
     }
 
@@ -170,6 +173,7 @@ class StarlrRepository(
     fun onSessionExpired() {
         tokenStore.clear()
         ProfileCache.clear() // 会话失效同登出处理
+        ProfileDiskCache.clear(appContext)
         _session.value = Session(false)
         onSessionExpiredListener?.invoke()
     }
