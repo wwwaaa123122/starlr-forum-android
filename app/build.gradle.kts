@@ -21,8 +21,8 @@ android {
         applicationId = "com.starlr.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 27
-        versionName = "0.1.26"
+        versionCode = 28
+        versionName = "0.1.27"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -41,6 +41,8 @@ android {
         debug {
             // 模拟器访问宿主机 Worker（wrangler dev @ :8787）
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8787/\"")
+            // debug 桥接页基址默认与 release 同构（ServerConfig 引用该字段）
+            buildConfigField("String", "APP_AUTH_BASE_URL", "\"http://10.0.2.2:8787\"")
         }
         release {
             isMinifyEnabled = true
