@@ -55,7 +55,6 @@ import com.starlr.app.R
 import com.starlr.app.data.AppLoginPrepareRequest
 import com.starlr.app.data.AppLoginPrepareResponse
 import com.starlr.app.data.StarlrRepository
-import com.starlr.app.ui.theme.SlBrand
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -240,7 +239,7 @@ fun LoginScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SlBrand, cursorColor = SlBrand),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary),
             )
             Spacer(Modifier.height(14.dp))
             OutlinedTextField(
@@ -250,7 +249,7 @@ fun LoginScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SlBrand, cursorColor = SlBrand),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary),
             )
             Spacer(Modifier.height(14.dp))
             OutlinedTextField(
@@ -261,7 +260,7 @@ fun LoginScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SlBrand, cursorColor = SlBrand),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary),
             )
             Spacer(Modifier.height(14.dp))
         } else {
@@ -272,7 +271,7 @@ fun LoginScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SlBrand, cursorColor = SlBrand),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary),
             )
             Spacer(Modifier.height(14.dp))
         }
@@ -285,7 +284,7 @@ fun LoginScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = SlBrand, cursorColor = SlBrand),
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary),
         )
 
         state.error?.let {
@@ -304,10 +303,10 @@ fun LoginScreen(
                 else vm.register(identifier, email, password, nickname)
             },
             enabled = !state.loading && identifier.isNotBlank() && password.isNotBlank() &&
-                (mode == "login" || email.isNotBlank()),
+                (mode == "login" || (email.isNotBlank() && password.length >= 8)),
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(999.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = SlBrand),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) {
             if (state.loading) {
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
@@ -321,11 +320,11 @@ fun LoginScreen(
             buildAnnotatedString {
                 append(if (mode == "login") "登录即代表你同意 " else "注册即表示你同意 ")
                 withLink(
-                    LinkAnnotation.Url(com.starlr.app.data.StarlrRepository.appAuthUrl(container.repository.serverConfig.current).removeSuffix("/app-auth") + "/terms", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
+                    LinkAnnotation.Url(com.starlr.app.data.StarlrRepository.appAuthUrl(container.repository.serverConfig.current).removeSuffix("/app-auth") + "/terms", TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)))
                 ) { append("《用户协议》") }
                 append(" 和 ")
                 withLink(
-                    LinkAnnotation.Url(com.starlr.app.data.StarlrRepository.appAuthUrl(container.repository.serverConfig.current).removeSuffix("/app-auth") + "/privacy", TextLinkStyles(SpanStyle(color = SlBrand, fontWeight = FontWeight.Bold)))
+                    LinkAnnotation.Url(com.starlr.app.data.StarlrRepository.appAuthUrl(container.repository.serverConfig.current).removeSuffix("/app-auth") + "/privacy", TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)))
                 ) { append("《隐私政策》") }
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,

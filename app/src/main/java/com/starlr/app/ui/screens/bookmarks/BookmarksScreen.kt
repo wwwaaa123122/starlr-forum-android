@@ -87,7 +87,16 @@ class BookmarksViewModel(private val repo: StarlrRepository) : ViewModel() {
 
     fun unfavorite(post: Post) {
         _state.value = _state.value.copy(posts = _state.value.posts.filterNot { it.id == post.id })
-        viewModelScope.launch { runCatching { repo.api.unfavoritePost(post.id) } }
+        viewModelScope.launch {
+            runCatching { repo.api.unfavoritePost(post.id) }
+                .onFailure { e ->
+                    // 取消收藏失败：恢复列表项并提示（避免静默丢失）
+                    _state.value = _state.value.copy(
+                        error = "取消收藏失败：" + (StarlrRepository.toApiError(e).message ?: "未知错误"),
+                        posts = (_state.value.posts + post).sortedBy { it.id.hashCode() },
+                    )
+                }
+        }
     }
 
     companion object {
@@ -122,6 +131,17 @@ fun BookmarksScreen(
         }
 
         LazyColumn(Modifier.fillMaxSize()) {
+            // 取消收藏等操作的失败提示（列表非空时也能看到）
+            if (state.posts.isNotEmpty() && state.error != null) {
+                item(key = "error") {
+                    Text(
+                        state.error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 13.sp,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
             items(state.posts, key = { it.id }) { post ->
                 PostCard(
                     post = post,

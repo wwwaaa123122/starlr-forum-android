@@ -274,20 +274,29 @@ fun PostDetailScreen(
 
     val topLevel = state.replies.filter { it.parentReplyId.isNullOrBlank() }
     // 回复只展示两层：挂在子回复下的深层回复提升到所在顶层楼，避免嵌套丢失
-    val childrenOf: (String) -> List<Reply> = { parentId ->
+    // 预计算 parentId → 子回复列表映射，避免每个顶层楼渲染时重复 O(n²) 遍历
+    val childrenMap: Map<String, List<Reply>> = remember(state.replies, topLevel) {
         val topIds = topLevel.mapTo(HashSet(), { it.id })
-        state.replies.filter { reply ->
-            if (reply.parentReplyId.isNullOrBlank()) return@filter false
-            var cur = reply
-            var hops = 0
-            while (!cur.parentReplyId.isNullOrBlank() && hops < 20) {
-                hops++
-                if (cur.parentReplyId == parentId) return@filter true
-                cur = state.replies.firstOrNull { it.id == cur.parentReplyId } ?: return@filter cur.parentReplyId == parentId
+        buildMap<String, MutableList<Reply>> {
+            state.replies.forEach { reply ->
+                if (reply.parentReplyId.isNullOrBlank()) return@forEach
+                // 沿 parent 链向上找到最近的顶层楼（超过 20 层视为异常数据，丢弃）
+                var cur = reply
+                var hops = 0
+                while (hops < 20) {
+                    hops++
+                    val pid = cur.parentReplyId
+                    if (pid.isNullOrBlank()) break
+                    if (pid in topIds) {
+                        getOrPut(pid) { mutableListOf() }.add(reply)
+                        break
+                    }
+                    cur = state.replies.firstOrNull { it.id == pid } ?: break
+                }
             }
-            false
         }
     }
+    val childrenOf: (String) -> List<Reply> = { parentId -> childrenMap[parentId] ?: emptyList() }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // 顶栏
@@ -470,7 +479,7 @@ fun PostDetailScreen(
                         children = childrenOf(reply.id),
                         onOpenUser = onOpenUser,
                         onLike = { vm.likeReply(it) },
-                        onReplyTo = { vm.setReplyTo(it); if (!loggedIn) onLogin() },
+                        onReplyTo = { it -> if (loggedIn) { vm.setReplyTo(it) } else { onLogin() } },
                         onEdit = if (reply.authorId == myUserId || state.post?.canModerate == true) ({ editReplyTarget = it }) else null,
                         onReport = if (loggedIn && reply.authorId != myUserId) ({ reportTarget = "reply" to reply.id }) else null,
                     )
@@ -483,6 +492,8 @@ fun PostDetailScreen(
                             Modifier.fillMaxWidth().padding(vertical = 54.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
+                            com.starlr.app.ui.components.EmptyGlyph("✦")
+                            Spacer(Modifier.height(12.dp))
                             Text("还没有回复，来说点什么吧", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -551,7 +562,7 @@ fun PostDetailScreen(
                     },
                     modifier = Modifier.weight(1f),
                     maxLines = 4,
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         cursorColor = MaterialTheme.colorScheme.primary,
@@ -608,7 +619,7 @@ fun PostDetailScreen(
     reportMessage?.let { msg ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { reportMessage = null },
-            title = { Text("举报") },
+            title = { Text("举报", fontWeight = FontWeight.Bold) },
             text = { Text(msg) },
             confirmButton = { TextButton(onClick = { reportMessage = null }) { Text("好的") } },
         )
@@ -769,7 +780,11 @@ private fun EditDialog(
                         label = { Text("标题") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                        ),
                     )
                 }
                 OutlinedTextField(
@@ -779,7 +794,11 @@ private fun EditDialog(
                     minLines = 4,
                     maxLines = 10,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
             }
         },
@@ -839,7 +858,11 @@ private fun ReportDialog(
                     minLines = 2,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                    ),
                 )
             }
         },

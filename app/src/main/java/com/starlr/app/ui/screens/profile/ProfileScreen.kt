@@ -34,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -281,7 +280,10 @@ fun ProfileScreen(
     val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory(container))
     val state by vm.state.collectAsState()
     val session by container.repository.session.collectAsState()
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    // tab 状态按 label 字符串持久化，避免 tab 列表变化时索引漂移（如「喜欢」出现/隐藏）
+    val tabLabels = listOf("帖子", "回复", "喜欢")
+    var tabLabel by rememberSaveable { mutableStateOf("帖子") }
+    val tab = tabLabels.indexOf(tabLabel).coerceAtLeast(0)
 
     val target = username ?: session.user?.username
     LaunchedEffect(target) { vm.bind(username) }
@@ -438,7 +440,7 @@ fun ProfileScreen(
                     tabs.forEachIndexed { i, label ->
                         Tab(
                             selected = tab == i,
-                            onClick = { tab = i },
+                            onClick = { tabLabel = label },
                             text = { Text(label, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Normal) },
                         )
                     }
@@ -518,7 +520,13 @@ fun ProfileScreen(
                 }
             }
 
-            if (state.posts.isEmpty() && state.replies.isEmpty() && !state.loading) {
+            // 空态：按当前 tab 对应列表判断（帖子空态看 posts、回复 tab 看 replies、喜欢 tab 看 likes）
+            val currentTabEmpty = when (tab) {
+                0 -> state.posts.isEmpty()
+                2 -> state.likes.isEmpty()
+                else -> state.replies.isEmpty()
+            }
+            if (currentTabEmpty && !state.loading) {
                 item {
                     Column(
                         Modifier.fillMaxWidth().padding(vertical = 64.dp),
@@ -528,7 +536,11 @@ fun ProfileScreen(
                         Spacer(Modifier.height(10.dp))
                         // 加载失败显示具体错误（含 HTTP 状态与后端 code/message），便于排查
                         Text(
-                            state.error ?: if (tab == 0) "还没有帖子" else "还没有回复",
+                            state.error ?: when (tab) {
+                                0 -> "还没有帖子"
+                                2 -> "还没有喜欢的帖子"
+                                else -> "还没有回复"
+                            },
                             color = if (state.error != null) MaterialTheme.colorScheme.error
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,

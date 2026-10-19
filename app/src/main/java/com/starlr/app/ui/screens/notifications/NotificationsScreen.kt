@@ -247,7 +247,12 @@ private fun NotificationRow(notification: Notification, onClick: () -> Unit) {
                 "favorite" -> Icons.Filled.Favorite
                 else -> Icons.Filled.Star // like / system / report 等
             },
-            contentDescription = notification.type,
+            contentDescription = when (notification.type) {
+                "reply" -> "回复通知"
+                "mention" -> "提及通知"
+                "favorite" -> "收藏通知"
+                else -> "通知"
+            },
             tint = when (notification.type) {
                 "reply" -> MaterialTheme.colorScheme.primary
                 "mention" -> MaterialTheme.colorScheme.tertiary

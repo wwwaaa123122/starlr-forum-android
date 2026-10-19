@@ -43,6 +43,9 @@ import com.starlr.app.AppContainer
 import com.starlr.app.data.AdminReport
 import com.starlr.app.data.HandleReportRequest
 import com.starlr.app.ui.components.relativeTime
+import com.starlr.app.ui.components.EmptyGlyph
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 
 private val REASON_LABELS = mapOf(
     "spam" to "垃圾广告",
@@ -121,12 +124,18 @@ fun AdminReportsScreen(
                 TextButton(onClick = { refreshKey++ }) { Text("重试") }
             }
 
-            reports.isEmpty() -> Text(
-                if (tab == "pending") "没有待处理的举报" else "暂无记录",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
+            reports.isEmpty() -> Column(
+                Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                EmptyGlyph(if (tab == "pending") "📭" else "🗂")
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    if (tab == "pending") "没有待处理的举报" else "暂无记录",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
 
             else -> LazyColumn(Modifier.fillMaxSize()) {
                 items(reports, key = { it.id }) { r ->
@@ -223,21 +232,31 @@ fun AdminReportsScreen(
                         }
                     }
                     if (action == "mute") {
-                        androidx.compose.material3.OutlinedTextField(
+                        OutlinedTextField(
                             value = daysText,
                             onValueChange = { daysText = it.filter { c -> c.isDigit() }.take(4) },
                             label = { Text("禁言天数") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                cursorColor = MaterialTheme.colorScheme.primary,
+                            ),
                         )
                     }
-                    androidx.compose.material3.OutlinedTextField(
+                    OutlinedTextField(
                         value = note,
                         onValueChange = { note = it },
                         label = { Text("处理备注（可选）") },
                         minLines = 2,
                         maxLines = 4,
                         modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                        ),
                     )
                 }
             },
@@ -271,7 +290,7 @@ fun AdminReportsScreen(
     message?.let { msg ->
         AlertDialog(
             onDismissRequest = { message = null },
-            title = { Text("举报处理") },
+            title = { Text("举报处理", fontWeight = FontWeight.Bold) },
             text = { Text(msg) },
             confirmButton = { TextButton(onClick = { message = null }) { Text("好的") } },
         )

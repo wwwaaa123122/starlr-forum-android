@@ -84,7 +84,11 @@ private fun UpdateDialog(info: AppUpdateInfo, container: AppContainer, onDismiss
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("发现新版本" + (info.versionName?.takeIf { it.isNotEmpty() }?.let { " v$it" } ?: "")) },
-        text = { info.notes?.takeIf { it.isNotEmpty() }?.let { Text(it) } ?: Unit },
+        text = {
+            // notes 为空时不硬编码营销文案，给中性兜底说明
+            val notes = info.notes?.takeIf { it.isNotEmpty() }
+            Text(notes ?: "新版本已发布，包含稳定性与体验改进。可在应用内查看更新内容。")
+        },
         confirmButton = {
             TextButton(onClick = {
                 val url = info.url

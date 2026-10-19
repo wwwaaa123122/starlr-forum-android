@@ -91,7 +91,7 @@ fun UnreadBadge(count: Int, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = if (count > 99) "99+" else count.toString(),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimary,
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
         )

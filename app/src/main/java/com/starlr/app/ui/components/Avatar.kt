@@ -94,6 +94,10 @@ private fun hueOf(key: String): Float {
 @Composable
 fun EmptyGlyph(symbol: String) {
     Box(contentAlignment = Alignment.Center) {
-        Text(text = symbol, fontSize = 44.sp, color = Color(0xFF646D94))
+        Text(
+            text = symbol,
+            fontSize = 44.sp,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+        )
     }
 }

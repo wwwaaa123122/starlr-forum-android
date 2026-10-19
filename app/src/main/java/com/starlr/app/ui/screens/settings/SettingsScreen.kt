@@ -1,6 +1,7 @@
 package com.starlr.app.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -179,6 +181,8 @@ fun SettingsScreen(
     var newPassword by rememberSaveable { mutableStateOf("") }
     var serverUrl by rememberSaveable { mutableStateOf(container.serverConfig.current) }
     var uploadError by remember { mutableStateOf<String?>(null) }
+    var confirmLogout by remember { mutableStateOf(false) }
+    var confirmSaveServer by remember { mutableStateOf(false) }
 
     // 头像上传：成功后刷新 me（后端自动更新 avatar_url）
     val pickAvatar = rememberImageUploadLauncher(
@@ -279,20 +283,31 @@ fun SettingsScreen(
                         name = session.user?.username ?: "用户",
                         size = 56.dp,
                     )
-                    // 换头像（右上角小相机）
-                    IconButton(
-                        onClick = { pickAvatar() },
+                    // 换头像（右上角小相机）：视觉 24dp，命中区扩大到 48dp
+                    Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .size(24.dp)
-                            .background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape),
+                            .offset(x = 12.dp, y = (-12).dp)
+                            .size(48.dp)
+                            .clickable(
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                indication = null,
+                            ) { pickAvatar() },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            Icons.Filled.AddAPhoto,
-                            contentDescription = "更换头像",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(14.dp),
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Filled.AddAPhoto,
+                                contentDescription = "更换头像",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
                     }
                 }
                 Spacer(Modifier.width(14.dp))
@@ -365,6 +380,10 @@ fun SettingsScreen(
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                ),
             )
             OutlinedTextField(
                 value = newPassword,
@@ -374,6 +393,10 @@ fun SettingsScreen(
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                ),
             )
             Button(
                 onClick = { vm.changePassword(currentPassword, newPassword) },
@@ -400,7 +423,7 @@ fun SettingsScreen(
                 ),
             )
             Button(
-                onClick = { vm.saveServer(container.serverConfig, serverUrl) },
+                onClick = { confirmSaveServer = true },
                 enabled = !state.saving,
                 modifier = Modifier.fillMaxWidth().height(46.dp),
                 shape = RoundedCornerShape(999.dp),
@@ -417,7 +440,7 @@ fun SettingsScreen(
 
             // 退出登录
             Button(
-                onClick = { vm.logout(onLoggedOut) },
+                onClick = { confirmLogout = true },
                 enabled = session.loggedIn,
                 modifier = Modifier.fillMaxWidth().height(46.dp),
                 shape = RoundedCornerShape(999.dp),
@@ -428,5 +451,35 @@ fun SettingsScreen(
             ) { Text("退出登录") }
             Spacer(Modifier.height(32.dp))
         }
+    }
+
+    // 退出登录确认弹窗（保存服务器地址会静默登出，同样需要确认）
+    if (confirmLogout) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmLogout = false },
+            title = { Text("退出登录", fontWeight = FontWeight.Bold) },
+            text = { Text("确定要退出当前账号吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmLogout = false
+                    vm.logout(onLoggedOut)
+                }) { Text("退出") }
+            },
+            dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text("取消") } },
+        )
+    }
+    if (confirmSaveServer) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmSaveServer = false },
+            title = { Text("保存服务器地址", fontWeight = FontWeight.Bold) },
+            text = { Text("保存新的服务器地址会退出当前登录，需要重新登录。确定继续吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmSaveServer = false
+                    vm.saveServer(container.serverConfig, serverUrl)
+                }) { Text("确定") }
+            },
+            dismissButton = { TextButton(onClick = { confirmSaveServer = false }) { Text("取消") } },
+        )
     }
 }

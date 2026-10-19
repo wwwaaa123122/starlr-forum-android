@@ -289,12 +289,17 @@ fun ComposeScreen(
                 Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             }
 
+            state.error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+            }
+
             // 正文
             OutlinedTextField(
                 value = content,
                 onValueChange = { if (it.length <= 50_000) content = it },
                 placeholder = { Text(if (replyTo != null) "写下你的回复…" else "说点什么…（支持 Markdown）") },
                 minLines = if (replyTo != null) 3 else 8,
+                maxLines = 12,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -349,9 +354,6 @@ fun ComposeScreen(
                 }
             }
 
-            state.error?.let {
-                Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
-            }
             Spacer(Modifier.height(24.dp))
         }
     }
