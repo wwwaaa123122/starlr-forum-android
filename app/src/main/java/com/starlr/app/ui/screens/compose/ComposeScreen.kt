@@ -338,9 +338,10 @@ fun ComposeScreen(
                                     fontSize = 13.sp,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .clickable { tags = tags - t } // 点整枚 chip 移除
                                         .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(999.dp))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                                    // 点击移除由长按/后续迭代承担
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
                                 )
                             }
                         }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -39,6 +40,8 @@ fun ActionCount(
 ) {
     Row(
         modifier = modifier
+            // 最小命中区 40×40dp（视觉紧凑、命中区补足；48dp 会破坏操作条排版密度）
+            .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
             .clip(RoundedCornerShape(999.dp))
             .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(horizontal = 8.dp, vertical = 4.dp),

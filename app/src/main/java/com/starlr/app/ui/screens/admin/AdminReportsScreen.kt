@@ -66,6 +66,7 @@ fun AdminReportsScreen(
     var handling by remember { mutableStateOf<AdminReport?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var tab by remember { mutableStateOf("pending") }
+    var refreshKey by remember { mutableStateOf(0) }
 
     suspend fun load(status: String) {
         loading = true
@@ -75,7 +76,7 @@ fun AdminReportsScreen(
             .onFailure { error = it.message ?: "加载失败"; loading = false }
     }
 
-    LaunchedEffect(tab) { load(tab) }
+    LaunchedEffect(tab, refreshKey) { load(tab) }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // 顶栏
@@ -117,7 +118,7 @@ fun AdminReportsScreen(
             error != null -> Column(Modifier.fillMaxWidth().padding(24.dp)) {
                 Text(error!!, color = MaterialTheme.colorScheme.error, fontSize = 14.sp)
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = { tab = tab /* 重载 */ }) { Text("重试") }
+                TextButton(onClick = { refreshKey++ }) { Text("重试") }
             }
 
             reports.isEmpty() -> Text(

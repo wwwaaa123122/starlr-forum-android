@@ -351,7 +351,7 @@ fun PostDetailScreen(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(999.dp))
                                                 .clickable { reportTarget = "post" to post.id }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                .padding(horizontal = 8.dp, vertical = 10.dp),
                                         )
                                     }
                                     if (post.isAuthor || post.canModerate) {
@@ -363,7 +363,7 @@ fun PostDetailScreen(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(999.dp))
                                                 .clickable { editPostOpen = true }
-                                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                                                .padding(horizontal = 8.dp, vertical = 10.dp),
                                         )
                                     }
                                 }
@@ -691,7 +691,7 @@ private fun ReplyRow(
                         modifier = Modifier
                             .clip(RoundedCornerShape(999.dp))
                             .clickable { cb(reply) }
-                            .padding(horizontal = 4.dp),
+                            .padding(horizontal = 8.dp, vertical = 10.dp),
                     )
                 }
                 if (reply.editedAt != null) {

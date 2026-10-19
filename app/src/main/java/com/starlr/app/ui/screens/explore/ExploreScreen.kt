@@ -32,6 +32,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,8 +85,19 @@ class ExploreViewModel(private val repo: StarlrRepository) : ViewModel() {
     }
 
     fun setQuery(q: String) {
-        _state.value = _state.value.copy(query = q, activeTag = null)
+        // 清空查询时同步清结果，避免旧结果残留
+        if (q.isBlank()) {
+            _state.value = _state.value.copy(query = q, activeTag = null, posts = emptyList(), users = emptyList(), done = false, error = null)
+        } else {
+            _state.value = _state.value.copy(query = q, activeTag = null)
+        }
         queryFlow.value = q
+    }
+
+    /** 搜索失败后重试（重试按钮触发） */
+    fun retry() {
+        val q = _state.value.query.removePrefix("#").ifBlank { return }
+        doSearch(q, isTag = _state.value.activeTag != null)
     }
 
     fun loadHotTags() {
@@ -282,7 +294,20 @@ fun ExploreScreen(
                         Modifier.fillMaxWidth().padding(vertical = 64.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        CircularProgressIndicator()
+                        Text("加载失败", color = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.height(4.dp))
+                        Text(state.error ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "重试",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(999.dp))
+                                .clickable { vm.retry() }
+                                .padding(horizontal = 20.dp, vertical = 10.dp),
+                        )
                     }
                 }
             }
