@@ -53,6 +53,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.starlr.app.AppContainer
 import com.starlr.app.data.Post
+import com.starlr.app.data.ProfileCache
 import com.starlr.app.data.Reply
 import com.starlr.app.data.StarlrRepository
 import com.starlr.app.data.User
@@ -89,9 +90,30 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
     private var target: String? = null
     private var loadedFor: String? = null
 
-    /** 进入页面：绑定目标用户并刷新第一页 */
+    /** 进入页面：绑定目标用户并刷新第一页（命中缓存时先回显，再静默刷新） */
     fun bind(username: String?) {
         target = username
+        val name = username ?: repo.session.value.user?.username
+        if (name != null && _state.value.user == null) {
+            val cached = ProfileCache.get(repo.serverConfig.current, name, repo.session.value.user?.username)
+            if (cached != null) {
+                _state.value = _state.value.copy(
+                    user = cached.user,
+                    posts = cached.posts,
+                    replies = cached.replies,
+                    likes = cached.likes,
+                    postPage = 1,
+                    replyPage = 1,
+                    likePage = 1,
+                    postHasMore = cached.postHasMore,
+                    replyHasMore = cached.replyHasMore,
+                    likeHasMore = cached.likeHasMore,
+                    loading = false,
+                    error = null,
+                )
+                loadedFor = name
+            }
+        }
         refresh()
     }
 
@@ -146,6 +168,22 @@ class ProfileViewModel(private val repo: StarlrRepository) : ViewModel() {
                         }
                     }
                 }
+            }
+            // 刷新成功：整包写入缓存（下次进页秒开）
+            val s = _state.value
+            if (s.user != null && s.error == null) {
+                ProfileCache.put(
+                    server = repo.serverConfig.current,
+                    username = name,
+                    currentAccount = repo.session.value.user?.username,
+                    user = s.user,
+                    posts = s.posts,
+                    replies = s.replies,
+                    likes = s.likes,
+                    postHasMore = s.postHasMore,
+                    replyHasMore = s.replyHasMore,
+                    likeHasMore = s.likeHasMore,
+                )
             }
             _state.value = _state.value.copy(loading = false)
         }

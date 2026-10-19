@@ -121,6 +121,7 @@ class StarlrRepository(
     suspend fun logout() {
         runCatching { api.logout(LogoutRequest(tokenStore.refreshToken)) }
         tokenStore.clear()
+        ProfileCache.clear() // 切换账号/登出：个人主页缓存整包清空
         _session.value = Session(false)
     }
 
@@ -168,6 +169,7 @@ class StarlrRepository(
 
     fun onSessionExpired() {
         tokenStore.clear()
+        ProfileCache.clear() // 会话失效同登出处理
         _session.value = Session(false)
         onSessionExpiredListener?.invoke()
     }
