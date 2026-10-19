@@ -1,8 +1,11 @@
 package com.starlr.app.ui.screens.compose
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,10 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 
@@ -40,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,7 +142,7 @@ private val TAGS_MAX = 5
 /**
  * 发帖页（全屏）：标题 + 正文 + 板块选择 + 标签；replyTo 非空时为回复模式。
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ComposeScreen(
     container: AppContainer,
@@ -157,7 +158,6 @@ fun ComposeScreen(
     var tagInput by rememberSaveable { mutableStateOf("") }
     var tags by rememberSaveable { mutableStateOf(listOf<String>()) }
     var categorySlug by rememberSaveable { mutableStateOf<String?>(null) }
-    var menuOpen by remember { mutableStateOf(false) }
     var uploadingImage by remember { mutableStateOf(false) }
     var uploadError by remember { mutableStateOf<String?>(null) }
 
@@ -235,29 +235,35 @@ fun ComposeScreen(
                     )
                 }
 
-                // 板块分类
-                ExposedDropdownMenuBox(expanded = menuOpen, onExpandedChange = { menuOpen = it }) {
-                    OutlinedTextField(
-                        value = state.categories.firstOrNull { it.slug == categorySlug }?.name
-                            ?: "选择板块",
-                        onValueChange = {},
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuOpen) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            cursorColor = MaterialTheme.colorScheme.primary,
-                        ),
+                // 板块分类：胶囊 chips 行（与应用整体极简风格一致，单选高亮）
+                Column {
+                    Text(
+                        "板块",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    ExposedDropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         state.categories.forEach { cat ->
-                            DropdownMenuItem(
-                                text = { Text("${cat.icon.orEmpty()} ${cat.name}") },
-                                onClick = {
-                                    categorySlug = cat.slug
-                                    menuOpen = false
-                                },
+                            val selected = cat.slug == categorySlug
+                            Text(
+                                text = "${cat.icon.orEmpty()} ${cat.name}".trim(),
+                                fontSize = 13.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceVariant,
+                                    )
+                                    .clickable { categorySlug = cat.slug }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
                             )
                         }
                     }
