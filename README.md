@@ -101,9 +101,4 @@ $ANDROID_HOME/build-tools/35.0.0/apksigner verify --print-certs app/build/output
 
 本项目基于 [GPL-3.0-or-later](./LICENSE) 协议开源。
 
-- 你可以自由使用、学习、修改和分发本项目代码；
-- 任何基于本项目的二次开发作品，必须同样以 GPL-3.0 协议开源，并保留原始版权声明；
-- 本项目按「现状」提供，不附带任何担保；
-- 版权所有 © 2026 wwwaaa123122 (星辰旅人)。
-
 Starlr Forum 是一个运行在 Cloudflare Workers 上的轻量级论坛系统（D1 数据库 + R2 存储 + React 前端 + Android 客户端）。
