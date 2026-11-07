@@ -363,7 +363,7 @@ fun PostDetailScreen(
                                                 .padding(horizontal = 8.dp, vertical = 10.dp),
                                         )
                                     }
-                                    if (post.isAuthor || post.canModerate) {
+                                    if (post.isAuthor) {
                                         Spacer(Modifier.width(8.dp))
                                         Text(
                                             "编辑",
@@ -480,7 +480,7 @@ fun PostDetailScreen(
                         onOpenUser = onOpenUser,
                         onLike = { vm.likeReply(it) },
                         onReplyTo = { it -> if (loggedIn) { vm.setReplyTo(it) } else { onLogin() } },
-                        onEdit = if (reply.authorId == myUserId || state.post?.canModerate == true) ({ editReplyTarget = it }) else null,
+                        onEdit = if (reply.authorId == myUserId) ({ editReplyTarget = it }) else null,
                         onReport = if (loggedIn && reply.authorId != myUserId) ({ reportTarget = "reply" to reply.id }) else null,
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

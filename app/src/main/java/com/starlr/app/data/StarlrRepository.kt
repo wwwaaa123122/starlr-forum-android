@@ -1,5 +1,7 @@
 package com.starlr.app.data
 
+import com.starlr.app.BuildConfig
+
 import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,7 +69,9 @@ class StarlrRepository(
         .addInterceptor(ServerRewriteInterceptor(serverConfig))
         .addInterceptor(AuthInterceptor(tokenStore))
         .authenticator(TokenAuthenticator(tokenStore, { serverConfig.current }, onSessionExpired))
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
+        })
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
